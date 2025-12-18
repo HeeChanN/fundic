@@ -10,6 +10,7 @@ import com.google.adk.sessions.Session;
 import com.google.genai.types.Content;
 import com.google.genai.types.Part;
 import io.fundic.fundic_server.application.agent.stock.StockSelectionOutput;
+import io.fundic.fundic_server.config.GoogleApiConfig;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -32,8 +33,13 @@ public class PortfolioAgent {
     private final Session defaultSession;
     private final ObjectMapper objectMapper;
 
-    public PortfolioAgent(ObjectMapper objectMapper) {
+    public PortfolioAgent(ObjectMapper objectMapper, GoogleApiConfig googleApiConfig) {
         this.objectMapper = objectMapper;
+
+        // Google API 키 확인 (GoogleApiConfig의 @PostConstruct에서 이미 환경 변수로 설정됨)
+        if (!googleApiConfig.isConfigured()) {
+            throw new IllegalStateException("Google API key is not configured. Please set 'google.api-key' in application.yml");
+        }
 
         this.agent = LlmAgent.builder()
                 .name("portfolio-agent")
@@ -49,7 +55,7 @@ public class PortfolioAgent {
                 .createSession(runner.appName(), "default-user")
                 .blockingGet();
 
-        log.info("PortfolioAgent initialized with session: {}", defaultSession.id());
+        log.info("PortfolioAgent initialized with session: {} using API key from config", defaultSession.id());
     }
 
     /**

@@ -10,6 +10,7 @@ import com.google.adk.sessions.Session;
 import com.google.genai.types.Content;
 import com.google.genai.types.Part;
 import io.fundic.fundic_server.application.SectorNameProvider;
+import io.fundic.fundic_server.config.GoogleApiConfig;
 import io.fundic.fundic_server.domain.SectorSnapshot;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.extern.slf4j.Slf4j;
@@ -34,10 +35,16 @@ public class SectorSelectionAgent {
 
     public SectorSelectionAgent(
             ObjectMapper objectMapper,
-            SectorNameProvider sectorNameProvider
+            SectorNameProvider sectorNameProvider,
+            GoogleApiConfig googleApiConfig
     ) {
         this.objectMapper = objectMapper;
         this.sectorNameProvider = sectorNameProvider;
+
+        // Google API 키 확인 (GoogleApiConfig의 @PostConstruct에서 이미 환경 변수로 설정됨)
+        if (!googleApiConfig.isConfigured()) {
+            throw new IllegalStateException("Google API key is not configured. Please set 'google.api-key' in application.yml");
+        }
 
         this.agent = LlmAgent.builder()
                 .name("sector-selection-agent")
@@ -53,7 +60,7 @@ public class SectorSelectionAgent {
                 .createSession(runner.appName(), "default-user")
                 .blockingGet();
 
-        log.info("SectorSelectionAgent initialized with session: {}", defaultSession.id());
+        log.info("SectorSelectionAgent initialized with session: {} using API key from config", defaultSession.id());
     }
 
     /**

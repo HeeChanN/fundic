@@ -12,6 +12,7 @@ import com.google.genai.types.Content;
 import com.google.genai.types.Part;
 import io.fundic.fundic_server.application.FinancialDataProvider;
 import io.fundic.fundic_server.application.StockDataProvider;
+import io.fundic.fundic_server.config.GoogleApiConfig;
 import io.fundic.fundic_server.domain.FinancialData;
 import io.fundic.fundic_server.domain.StockData;
 import io.reactivex.rxjava3.core.Flowable;
@@ -42,11 +43,17 @@ public class StockSelectionAgent {
     public StockSelectionAgent(
             ObjectMapper objectMapper,
             StockDataProvider stockDataProvider,
-            FinancialDataProvider financialDataProvider
+            FinancialDataProvider financialDataProvider,
+            GoogleApiConfig googleApiConfig
     ) {
         this.objectMapper = objectMapper;
         this.stockDataProvider = stockDataProvider;
         this.financialDataProvider = financialDataProvider;
+
+        // Google API 키 확인 (GoogleApiConfig의 @PostConstruct에서 이미 환경 변수로 설정됨)
+        if (!googleApiConfig.isConfigured()) {
+            throw new IllegalStateException("Google API key is not configured. Please set 'google.api-key' in application.yml");
+        }
 
         this.agent = LlmAgent.builder()
                 .name("stock-selection-agent")
@@ -62,7 +69,7 @@ public class StockSelectionAgent {
                 .createSession(runner.appName(), "default-user")
                 .blockingGet();
 
-        log.info("StockSelectionAgent initialized with session: {}", defaultSession.id());
+        log.info("StockSelectionAgent initialized with session: {} using API key from config", defaultSession.id());
     }
 
     /**

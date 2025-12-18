@@ -23,6 +23,10 @@ spring:
 
 # Google ADK 설정
 google:
+  # API 키를 직접 입력하거나 환경 변수 사용
+  # 방법 1: 직접 입력 (권장하지 않음 - Git에 커밋하지 마세요!)
+  # api-key: "your-api-key-here"
+  # 방법 2: 환경 변수 사용 (권장)
   api-key: ${GOOGLE_API_KEY:}
 
 # Agent 기본 설정
