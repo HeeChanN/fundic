@@ -19,8 +19,8 @@ public class CsvStockNameMapLoader {
         this.resourceLoader = resourceLoader;
     }
 
-    // ✅ 너가 만든 최종 파일
-    private static final String PATH = "classpath:data/stock_sector_map_en_fixed.csv";
+    // CSV 파일 경로
+    private static final String PATH = "classpath:data/stock_sector_map.csv";
     private static final Charset CSV_CHARSET = Charset.forName("UTF-8"); // utf-8-sig도 문제 없이 읽힘
 
     public Map<String, String> loadCodeToName() {

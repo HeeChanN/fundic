@@ -1,6 +1,14 @@
 package io.fundic.fundic_server.application.sector;
 
+import io.fundic.fundic_server.application.SectorConstituentsProvider;
+import io.fundic.fundic_server.application.SectorNameProvider;
 import io.fundic.fundic_server.application.StockPickProvider;
+import io.fundic.fundic_server.application.agent.portfolio.PortfolioAgent;
+import io.fundic.fundic_server.application.agent.portfolio.PortfolioInput;
+import io.fundic.fundic_server.application.agent.portfolio.PortfolioOutput;
+import io.fundic.fundic_server.application.agent.stock.StockSelectionAgent;
+import io.fundic.fundic_server.application.agent.stock.StockSelectionInput;
+import io.fundic.fundic_server.application.agent.stock.StockSelectionOutput;
 import io.fundic.fundic_server.domain.SectorScore;
 import io.fundic.fundic_server.domain.SectorSnapshot;
 import io.fundic.fundic_server.domain.SectorSnapshotProvider;
@@ -8,12 +16,15 @@ import io.fundic.fundic_server.presentation.dto.PortfolioRecommendResDto;
 import io.fundic.fundic_server.presentation.dto.SectorRecommendationResDto;
 import io.fundic.fundic_server.presentation.dto.UserProfileRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RecommendService {
@@ -24,6 +35,14 @@ public class RecommendService {
 
     private final SectorDiscoveryService sectorDiscoveryService;
     private final StockPickProvider stockPickProvider;
+
+    // AI Agents
+    private final StockSelectionAgent stockSelectionAgent;
+    private final PortfolioAgent portfolioAgent;
+
+    // Utilities
+    private final SectorConstituentsProvider constituentsProvider;
+    private final SectorNameProvider sectorNameProvider;
 
 
     public SectorRecommendationResDto recommendSectors(UserProfileRequest req) {
@@ -54,6 +73,127 @@ public class RecommendService {
 
 
     public PortfolioRecommendResDto recommendPortfolio(UserProfileRequest req) {
+        log.info("Starting AI-based portfolio recommendation for user profile: {}", req);
+
+        try {
+            // 1. 섹터 추천
+            SectorRecommendationResDto sectorReco = recommendSectors(req);
+            String leaderSectorId = sectorReco.getSelected().getLeader();
+            String supportSectorId = sectorReco.getSelected().getSupport();
+            String bufferSectorId = sectorReco.getSelected().getBuffer();
+
+            // 2. 각 섹터별 종목 선택 (StockSelectionAgent)
+            StockSelectionOutput leaderStocks = selectStocksForSector(leaderSectorId, req);
+            StockSelectionOutput supportStocks = selectStocksForSector(supportSectorId, req);
+            StockSelectionOutput bufferStocks = selectStocksForSector(bufferSectorId, req);
+
+            // 3. 포트폴리오 최적화 (PortfolioAgent)
+            PortfolioInput portfolioInput = new PortfolioInput(
+                    new PortfolioInput.SectorInfo(leaderSectorId,
+                            sectorNameProvider.findNameById(leaderSectorId).orElse("섹터" + leaderSectorId),
+                            leaderStocks),
+                    new PortfolioInput.SectorInfo(supportSectorId,
+                            sectorNameProvider.findNameById(supportSectorId).orElse("섹터" + supportSectorId),
+                            supportStocks),
+                    new PortfolioInput.SectorInfo(bufferSectorId,
+                            sectorNameProvider.findNameById(bufferSectorId).orElse("섹터" + bufferSectorId),
+                            bufferStocks),
+                    req
+            );
+
+            PortfolioOutput portfolioOutput = portfolioAgent.execute(portfolioInput);
+
+            // 4. PortfolioRecommendResDto로 변환
+            return convertToResponseDto(portfolioOutput, leaderSectorId, supportSectorId, bufferSectorId);
+
+        } catch (Exception e) {
+            log.error("Failed to generate AI-based portfolio, falling back to rule-based", e);
+            return fallbackPortfolio(req);
+        }
+    }
+
+    /**
+     * 특정 섹터에 대한 종목 선택 실행
+     */
+    private StockSelectionOutput selectStocksForSector(String sectorId, UserProfileRequest profile) {
+        List<String> stockCodes = constituentsProvider.getStockCodesBySector(sectorId);
+        String sectorName = sectorNameProvider.findNameById(sectorId).orElse("섹터" + sectorId);
+
+        StockSelectionInput input = new StockSelectionInput(
+                Long.parseLong(sectorId),
+                sectorName,
+                stockCodes,
+                profile
+        );
+
+        return stockSelectionAgent.execute(input);
+    }
+
+    /**
+     * PortfolioOutput을 PortfolioRecommendResDto로 변환
+     */
+    private PortfolioRecommendResDto convertToResponseDto(
+            PortfolioOutput portfolioOutput,
+            String leaderSectorId,
+            String supportSectorId,
+            String bufferSectorId
+    ) {
+        // 섹터 비중 변환
+        Map<String, Integer> sectorWeights = new LinkedHashMap<>();
+        sectorWeights.put(leaderSectorId, (int) portfolioOutput.sectorWeights().leader());
+        sectorWeights.put(supportSectorId, (int) portfolioOutput.sectorWeights().support());
+        sectorWeights.put(bufferSectorId, (int) portfolioOutput.sectorWeights().buffer());
+
+        // 종목별 비중을 섹터별로 그룹화
+        Map<String, List<PortfolioRecommendResDto.StockPick>> stockPicksBySector = new LinkedHashMap<>();
+
+        Map<String, List<PortfolioOutput.StockAllocation>> bySector = portfolioOutput.stockAllocations().stream()
+                .collect(Collectors.groupingBy(PortfolioOutput.StockAllocation::sector));
+
+        for (Map.Entry<String, List<PortfolioOutput.StockAllocation>> entry : bySector.entrySet()) {
+            String sectorRole = entry.getKey();  // "leader", "support", "buffer"
+            String sectorId = getSectorIdByRole(sectorRole, leaderSectorId, supportSectorId, bufferSectorId);
+
+            List<PortfolioRecommendResDto.StockPick> picks = entry.getValue().stream()
+                    .map(alloc -> PortfolioRecommendResDto.StockPick.builder()
+                            .code(alloc.stockCode())
+                            .name(alloc.stockName())
+                            .score((int) (alloc.weight() * 10))  // 비중을 점수로 근사
+                            .reasons(List.of(String.format("포트폴리오 비중: %.1f%%", alloc.weight())))
+                            .build())
+                    .toList();
+
+            stockPicksBySector.put(sectorId, picks);
+        }
+
+        return PortfolioRecommendResDto.builder()
+                .sectorWeights(sectorWeights)
+                .stockPicksBySector(stockPicksBySector)
+                .rebalancingRules(portfolioOutput.rebalancingRules())
+                .caution("본 결과는 AI 기반 정보 제공 목적이며, 시장 상황에 따라 손실이 발생할 수 있습니다. " +
+                        portfolioOutput.explanation())
+                .meta(Map.of("mode", "AI_AGENT"))
+                .build();
+    }
+
+    /**
+     * 섹터 역할(leader/support/buffer)로부터 실제 섹터 ID 반환
+     */
+    private String getSectorIdByRole(String role, String leaderSectorId, String supportSectorId, String bufferSectorId) {
+        return switch (role.toLowerCase()) {
+            case "leader" -> leaderSectorId;
+            case "support" -> supportSectorId;
+            case "buffer" -> bufferSectorId;
+            default -> leaderSectorId;
+        };
+    }
+
+    /**
+     * Fallback: AI Agent 실패 시 기존 rule-based 로직 사용
+     */
+    private PortfolioRecommendResDto fallbackPortfolio(UserProfileRequest req) {
+        log.warn("Using fallback rule-based portfolio");
+
         SectorRecommendationResDto sectorReco = recommendSectors(req);
 
         Map<String, Integer> sectorWeights = sectorWeights(req.getRisk(),
@@ -78,7 +218,7 @@ public class RecommendService {
                 .stockPicksBySector(picks)
                 .rebalancingRules(rules)
                 .caution("본 결과는 정보 제공 목적이며, 시장 상황에 따라 손실이 발생할 수 있습니다.")
-                .meta(Map.of("mode", "MVP_PROVIDER"))
+                .meta(Map.of("mode", "FALLBACK_RULE_BASED"))
                 .build();
     }
 
