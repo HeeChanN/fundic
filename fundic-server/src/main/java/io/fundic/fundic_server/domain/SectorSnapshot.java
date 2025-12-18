@@ -10,6 +10,7 @@ import java.util.Map;
 @Builder
 public class SectorSnapshot {
     private String sectorId;
+    private String sectorName;  // 섹터명 (단순화를 위해 추가)
     private LocalDate asOf;
 
     // Momentum

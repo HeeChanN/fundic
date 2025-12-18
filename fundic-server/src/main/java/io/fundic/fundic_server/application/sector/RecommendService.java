@@ -12,10 +12,12 @@ import io.fundic.fundic_server.application.agent.sector.SectorSelectionOutput;
 import io.fundic.fundic_server.application.agent.stock.StockSelectionAgent;
 import io.fundic.fundic_server.application.agent.stock.StockSelectionInput;
 import io.fundic.fundic_server.application.agent.stock.StockSelectionOutput;
+import io.fundic.fundic_server.domain.Sector;
 import io.fundic.fundic_server.domain.SectorScore;
 import io.fundic.fundic_server.domain.SectorSnapshot;
 import io.fundic.fundic_server.domain.SectorSnapshotProvider;
 import io.fundic.fundic_server.domain.Stock;
+import io.fundic.fundic_server.infrastructure.sector.SectorRepository;
 import io.fundic.fundic_server.infrastructure.sector.StockRepository;
 import io.fundic.fundic_server.presentation.dto.PortfolioRecommendResDto;
 import io.fundic.fundic_server.presentation.dto.SectorRecommendationResDto;
@@ -50,23 +52,27 @@ public class RecommendService {
     private final SectorConstituentsProvider constituentsProvider;
     private final SectorNameProvider sectorNameProvider;
     private final StockRepository stockRepository;
+    private final SectorRepository sectorRepository;
 
 
     public SectorRecommendationResDto recommendSectors(UserProfileRequest req) {
         log.info("Starting AI-based sector recommendation for user profile: {}", req);
 
         try {
-            // 1. 섹터 유니버스 로드
-            List<SectorSnapshot> universe = sectorSnapshotProvider.loadUniverse();
+            // 1. DB에서 모든 섹터 조회
+            List<Sector> allSectors = sectorRepository.findAll();
+            log.info("Loaded {} sectors from database", allSectors.size());
 
-            // 2. 후보 섹터 필터링 (키워드 기반, 부족하면 전체로 fallback)
-            List<SectorSnapshot> candidates = sectorDiscoveryService.filterCandidates(universe, req);
+            // 2. Sector를 간단한 SectorSnapshot으로 변환
+            List<SectorSnapshot> sectorSnapshots = allSectors.stream()
+                    .map(sector -> SectorSnapshot.builder()
+                            .sectorId(String.valueOf(sector.getId()))
+                            .sectorName(sector.getName())
+                            .build())
+                    .toList();
 
-            log.info("Filtered {} candidate sectors from {} universe sectors",
-                    candidates.size(), universe.size());
-
-            // 3. AI Agent를 통한 섹터 선택
-            SectorSelectionInput input = new SectorSelectionInput(candidates, req);
+            // 3. AI Agent를 통한 섹터 선택 (리더, 서포트, 완충 섹터를 선정하고 이유 제공)
+            SectorSelectionInput input = new SectorSelectionInput(sectorSnapshots, req);
             SectorSelectionOutput agentOutput = sectorSelectionAgent.execute(input);
 
             // 4. Agent 출력을 DTO로 변환
@@ -76,30 +82,16 @@ public class RecommendService {
                     buildCardFromAgent("BUFFER", agentOutput.buffer(), "완충 섹터(안전장치)")
             );
 
-            // 5. 대체 옵션 계산 (기존 로직 재활용)
-            List<SectorScore> scores = scoringService.score(candidates, req);
-            var sel = new SectorAllocationService.Selection(
-                    agentOutput.leader().sectorId(),
-                    agentOutput.support().sectorId(),
-                    agentOutput.buffer().sectorId()
-            );
-            Map<String, List<String>> swaps = allocationService.swapOptions(scores, candidates, sel);
-
             return SectorRecommendationResDto.builder()
                     .selected(SectorRecommendationResDto.SelectedSectors.builder()
                             .leader(agentOutput.leader().sectorId())
                             .support(agentOutput.support().sectorId())
                             .buffer(agentOutput.buffer().sectorId())
                             .build())
-                    .swapOptions(SectorRecommendationResDto.SwapOptions.builder()
-                            .leader(swaps.get("leader"))
-                            .support(swaps.get("support"))
-                            .buffer(swaps.get("buffer"))
-                            .build())
+                    .swapOptions(null)  // 대체 옵션 제거
                     .cards(cards)
                     .meta(Map.of(
-                            "universeSize", universe.size(),
-                            "candidateSize", candidates.size(),
+                            "totalSectors", allSectors.size(),
                             "mode", "AI_AGENT",
                             "explanation", agentOutput.explanation()
                     ))
