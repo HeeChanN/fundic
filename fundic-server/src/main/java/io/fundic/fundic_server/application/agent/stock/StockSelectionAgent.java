@@ -73,7 +73,7 @@ public class StockSelectionAgent {
     }
 
     /**
-     * 종목 선택 실행
+     * 종목 선택 실행 (단일 섹터)
      *
      * @param input 종목 선택 입력 데이터
      * @return 선택된 종목 목록과 추천 이유
@@ -111,6 +111,48 @@ public class StockSelectionAgent {
         } catch (Exception e) {
             log.error("Failed to execute stock selection", e);
             throw new StockSelectionException("Failed to select stocks", e);
+        }
+    }
+
+    /**
+     * 종목 선택 실행 (배치 처리 - 여러 섹터 동시 처리)
+     * API 호출을 1회로 줄여 효율성 향상
+     *
+     * @param inputs 여러 섹터의 종목 선택 입력 데이터
+     * @return 섹터 역할별 선택된 종목 (key: "leader", "support", "buffer")
+     */
+    public Map<String, StockSelectionOutput> executeBatch(Map<String, StockSelectionInput> inputs) {
+        log.info("Executing batch stock selection for {} sectors", inputs.size());
+
+        try {
+            // 배치 프롬프트 생성
+            String prompt = buildBatchPrompt(inputs);
+
+            // Content 생성
+            Content userContent = Content.fromParts(Part.fromText(prompt));
+
+            // Agent 실행
+            AtomicReference<String> responseText = new AtomicReference<>("");
+            Flowable<Event> events = runner.runAsync(
+                    defaultSession.userId(),
+                    defaultSession.id(),
+                    userContent
+            );
+
+            // 최종 응답 추출
+            events.blockingForEach(event -> {
+                if (event.finalResponse()) {
+                    responseText.set(event.stringifyContent());
+                    log.debug("Agent batch response: {}", responseText.get());
+                }
+            });
+
+            // 응답을 파싱하여 Map<String, StockSelectionOutput>으로 변환
+            return parseBatchResponse(responseText.get(), inputs);
+
+        } catch (Exception e) {
+            log.error("Failed to execute batch stock selection", e);
+            throw new StockSelectionException("Failed to select stocks in batch", e);
         }
     }
 
@@ -284,6 +326,131 @@ public class StockSelectionAgent {
         }
 
         return cleaned;
+    }
+
+    /**
+     * 배치 프롬프트 생성 (여러 섹터를 한 번에 처리)
+     */
+    private String buildBatchPrompt(Map<String, StockSelectionInput> inputs) {
+        StringBuilder prompt = new StringBuilder();
+
+        // 공통 사용자 프로필 (첫 번째 input 사용)
+        StockSelectionInput firstInput = inputs.values().iterator().next();
+        prompt.append(String.format("""
+                **사용자 프로필**:
+                - 투자 기간: %s
+                - 리스크 성향: %s
+                - 목표: %s
+
+                """,
+                firstInput.userProfile().getHorizon(),
+                firstInput.userProfile().getRisk(),
+                firstInput.userProfile().getGoal()
+        ));
+
+        // 각 섹터별 종목 정보
+        for (Map.Entry<String, StockSelectionInput> entry : inputs.entrySet()) {
+            String role = entry.getKey(); // "leader", "support", "buffer"
+            StockSelectionInput input = entry.getValue();
+
+            // 종목 데이터 조회
+            Map<String, StockData> stockDataMap = stockDataProvider.getStockDataBatch(input.stockCodes());
+            Map<String, FinancialData> financialDataMap = financialDataProvider.getFinancialDataBatch(input.stockCodes());
+
+            // 종목 정보 포맷팅
+            String stocksInfo = input.stockCodes().stream()
+                    .map(code -> formatStockInfo(code, stockDataMap.get(code), financialDataMap.get(code)))
+                    .collect(Collectors.joining("\n"));
+
+            prompt.append(String.format("""
+                    **%s 섹터 (%s)**:
+                    - 섹터명: %s
+                    - 분석 대상 종목들:
+                    %s
+
+                    """,
+                    role.toUpperCase(),
+                    input.sectorId(),
+                    input.sectorName(),
+                    stocksInfo
+            ));
+        }
+
+        prompt.append("""
+                위 3개 섹터(LEADER, SUPPORT, BUFFER) 각각에 대해 Top 4 종목을 선정하고,
+                각 종목의 추천 이유와 리스크를 설명해주세요.
+
+                **출력 형식** (JSON):
+                {
+                  "leader": {
+                    "selectedStocks": [
+                      {
+                        "stockCode": "005930",
+                        "stockName": "삼성전자",
+                        "score": 85,
+                        "reason": "추천 이유...",
+                        "risks": "리스크..."
+                      }
+                    ]
+                  },
+                  "support": {
+                    "selectedStocks": [...]
+                  },
+                  "buffer": {
+                    "selectedStocks": [...]
+                  }
+                }
+                """);
+
+        return prompt.toString();
+    }
+
+    /**
+     * 배치 응답 파싱
+     */
+    private Map<String, StockSelectionOutput> parseBatchResponse(String response, Map<String, StockSelectionInput> inputs) {
+        try {
+            String jsonString = extractJson(response);
+            log.debug("Extracted batch JSON: {}", jsonString);
+
+            JsonNode root = objectMapper.readTree(jsonString);
+            Map<String, StockSelectionOutput> results = new java.util.LinkedHashMap<>();
+
+            // 각 섹터별 결과 파싱
+            for (String role : inputs.keySet()) {
+                JsonNode sectorNode = root.get(role.toLowerCase());
+                if (sectorNode != null && sectorNode.has("selectedStocks")) {
+                    JsonNode selectedStocksNode = sectorNode.get("selectedStocks");
+
+                    List<StockSelectionOutput.SelectedStock> stocks = new ArrayList<>();
+                    for (JsonNode stockNode : selectedStocksNode) {
+                        stocks.add(new StockSelectionOutput.SelectedStock(
+                                stockNode.get("stockCode").asText(),
+                                stockNode.get("stockName").asText(),
+                                stockNode.get("score").asInt(),
+                                stockNode.get("reason").asText(),
+                                stockNode.has("risks") ? stockNode.get("risks").asText() : ""
+                        ));
+                    }
+
+                    results.put(role, new StockSelectionOutput(stocks));
+                    log.info("Parsed {} stocks for {} sector", stocks.size(), role);
+                } else {
+                    log.warn("No stocks found for {} sector in batch response", role);
+                    results.put(role, new StockSelectionOutput(List.of()));
+                }
+            }
+
+            return results;
+
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse batch Agent JSON response", e);
+            log.error("Raw response: {}", response);
+            // 파싱 실패 시 빈 결과 반환
+            Map<String, StockSelectionOutput> emptyResults = new java.util.LinkedHashMap<>();
+            inputs.keySet().forEach(role -> emptyResults.put(role, new StockSelectionOutput(List.of())));
+            return emptyResults;
+        }
     }
 
     public static class StockSelectionException extends RuntimeException {
