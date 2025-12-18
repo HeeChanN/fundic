@@ -24,15 +24,14 @@ class StockSelectionAgentIntegrationTest {
     @Test
     void testStockSelection() {
         // Given
-        UserProfileRequest userProfile = new UserProfileRequest(
-                "장기",    // horizon
-                "중립",    // risk
-                "배당",    // goal
-                List.of("반도체", "AI")  // keywords
-        );
+        UserProfileRequest userProfile = new UserProfileRequest();
+        userProfile.setHorizon(UserProfileRequest.Horizon.M6P);
+        userProfile.setRisk(UserProfileRequest.Risk.MEDIUM);
+        userProfile.setGoal(UserProfileRequest.Goal.BALANCED);
+        userProfile.setThemeKeywords(List.of("반도체", "AI"));
 
         StockSelectionInput input = new StockSelectionInput(
-                "1",                              // sectorId
+                1L,                              // sectorId
                 "반도체",                         // sectorName
                 List.of("005930", "000660", "035420", "051910"),  // 삼성전자, SK하이닉스, NAVER, LG화학
                 userProfile

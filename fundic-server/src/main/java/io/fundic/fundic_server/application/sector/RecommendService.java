@@ -6,6 +6,9 @@ import io.fundic.fundic_server.application.StockPickProvider;
 import io.fundic.fundic_server.application.agent.portfolio.PortfolioAgent;
 import io.fundic.fundic_server.application.agent.portfolio.PortfolioInput;
 import io.fundic.fundic_server.application.agent.portfolio.PortfolioOutput;
+import io.fundic.fundic_server.application.agent.sector.SectorSelectionAgent;
+import io.fundic.fundic_server.application.agent.sector.SectorSelectionInput;
+import io.fundic.fundic_server.application.agent.sector.SectorSelectionOutput;
 import io.fundic.fundic_server.application.agent.stock.StockSelectionAgent;
 import io.fundic.fundic_server.application.agent.stock.StockSelectionInput;
 import io.fundic.fundic_server.application.agent.stock.StockSelectionOutput;
@@ -37,6 +40,7 @@ public class RecommendService {
     private final StockPickProvider stockPickProvider;
 
     // AI Agents
+    private final SectorSelectionAgent sectorSelectionAgent;
     private final StockSelectionAgent stockSelectionAgent;
     private final PortfolioAgent portfolioAgent;
 
@@ -46,9 +50,71 @@ public class RecommendService {
 
 
     public SectorRecommendationResDto recommendSectors(UserProfileRequest req) {
-        List<SectorSnapshot> universe = sectorSnapshotProvider.loadUniverse();
+        log.info("Starting AI-based sector recommendation for user profile: {}", req);
 
-        // ✅ 후보 섹터 필터링(키워드 기반, 부족하면 전체로 fallback)
+        try {
+            // 1. 섹터 유니버스 로드
+            List<SectorSnapshot> universe = sectorSnapshotProvider.loadUniverse();
+
+            // 2. 후보 섹터 필터링 (키워드 기반, 부족하면 전체로 fallback)
+            List<SectorSnapshot> candidates = sectorDiscoveryService.filterCandidates(universe, req);
+
+            log.info("Filtered {} candidate sectors from {} universe sectors",
+                    candidates.size(), universe.size());
+
+            // 3. AI Agent를 통한 섹터 선택
+            SectorSelectionInput input = new SectorSelectionInput(candidates, req);
+            SectorSelectionOutput agentOutput = sectorSelectionAgent.execute(input);
+
+            // 4. Agent 출력을 DTO로 변환
+            List<SectorRecommendationResDto.SectorCard> cards = List.of(
+                    buildCardFromAgent("LEADER", agentOutput.leader(), "리더 섹터(추세 엔진)"),
+                    buildCardFromAgent("SUPPORT", agentOutput.support(), "서브 섹터(보조 엔진)"),
+                    buildCardFromAgent("BUFFER", agentOutput.buffer(), "완충 섹터(안전장치)")
+            );
+
+            // 5. 대체 옵션 계산 (기존 로직 재활용)
+            List<SectorScore> scores = scoringService.score(candidates, req);
+            var sel = new SectorAllocationService.Selection(
+                    agentOutput.leader().sectorId(),
+                    agentOutput.support().sectorId(),
+                    agentOutput.buffer().sectorId()
+            );
+            Map<String, List<String>> swaps = allocationService.swapOptions(scores, candidates, sel);
+
+            return SectorRecommendationResDto.builder()
+                    .selected(SectorRecommendationResDto.SelectedSectors.builder()
+                            .leader(agentOutput.leader().sectorId())
+                            .support(agentOutput.support().sectorId())
+                            .buffer(agentOutput.buffer().sectorId())
+                            .build())
+                    .swapOptions(SectorRecommendationResDto.SwapOptions.builder()
+                            .leader(swaps.get("leader"))
+                            .support(swaps.get("support"))
+                            .buffer(swaps.get("buffer"))
+                            .build())
+                    .cards(cards)
+                    .meta(Map.of(
+                            "universeSize", universe.size(),
+                            "candidateSize", candidates.size(),
+                            "mode", "AI_AGENT",
+                            "explanation", agentOutput.explanation()
+                    ))
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Failed to generate AI-based sector recommendation, falling back to rule-based", e);
+            return fallbackSectorRecommendation(req);
+        }
+    }
+
+    /**
+     * Fallback: AI Agent 실패 시 기존 rule-based 로직 사용
+     */
+    private SectorRecommendationResDto fallbackSectorRecommendation(UserProfileRequest req) {
+        log.warn("Using fallback rule-based sector recommendation");
+
+        List<SectorSnapshot> universe = sectorSnapshotProvider.loadUniverse();
         List<SectorSnapshot> candidates = sectorDiscoveryService.filterCandidates(universe, req);
 
         List<SectorScore> scores = scoringService.score(candidates, req);
@@ -67,7 +133,11 @@ public class RecommendService {
                 .swapOptions(SectorRecommendationResDto.SwapOptions.builder()
                         .leader(swaps.get("leader")).support(swaps.get("support")).buffer(swaps.get("buffer")).build())
                 .cards(cards)
-                .meta(Map.of("universeSize", universe.size(), "candidateSize", candidates.size()))
+                .meta(Map.of(
+                        "universeSize", universe.size(),
+                        "candidateSize", candidates.size(),
+                        "mode", "FALLBACK_RULE_BASED"
+                ))
                 .build();
     }
 
@@ -279,6 +349,36 @@ public class RecommendService {
 
     private SectorRecommendationResDto.Kpi kpi(String label, String value) {
         return SectorRecommendationResDto.Kpi.builder().label(label).value(value).build();
+    }
+
+    /**
+     * Agent 출력으로부터 SectorCard 생성
+     */
+    private SectorRecommendationResDto.SectorCard buildCardFromAgent(
+            String role,
+            SectorSelectionOutput.SelectedSector sector,
+            String title
+    ) {
+        List<SectorRecommendationResDto.Kpi> kpis = List.of(
+                kpi("AI 점수", String.valueOf(sector.score())),
+                kpi("섹터 ID", sector.sectorId())
+        );
+
+        String caution = switch (role) {
+            case "LEADER" -> "단기 과열 시 조정 가능성에 유의하세요.";
+            case "SUPPORT" -> "섹터/업황 이벤트에 따라 민감하게 움직일 수 있습니다.";
+            case "BUFFER" -> "상승장에서는 상대 성과가 낮을 수 있습니다.";
+            default -> "시장 상황에 따라 변동될 수 있습니다.";
+        };
+
+        return SectorRecommendationResDto.SectorCard.builder()
+                .role(role)
+                .sectorId(sector.sectorId())
+                .title(title)
+                .oneLineReason(sector.reason())
+                .kpis(kpis)
+                .caution(caution)
+                .build();
     }
 //
 //    private List<PortfolioRecommendResDto.StockPick> stubPicks(String sectorId) {

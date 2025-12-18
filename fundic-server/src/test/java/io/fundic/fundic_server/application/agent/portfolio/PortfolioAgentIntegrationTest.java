@@ -24,12 +24,11 @@ class PortfolioAgentIntegrationTest {
     @Test
     void testPortfolioOptimization() {
         // Given
-        UserProfileRequest userProfile = new UserProfileRequest(
-                "장기",
-                "중립",
-                "배당",
-                List.of("반도체", "AI")
-        );
+        UserProfileRequest userProfile = new UserProfileRequest();
+        userProfile.setHorizon(UserProfileRequest.Horizon.M6P);
+        userProfile.setRisk(UserProfileRequest.Risk.MEDIUM);
+        userProfile.setGoal(UserProfileRequest.Goal.BALANCED);
+        userProfile.setThemeKeywords(List.of("반도체", "AI"));
 
         // 섹터별 종목 선택 결과 (Mock)
         StockSelectionOutput leaderStocks = new StockSelectionOutput(List.of(

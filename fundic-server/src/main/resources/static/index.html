@@ -306,27 +306,28 @@
             <div class="form-group">
                 <label for="horizon">투자 기간</label>
                 <select id="horizon">
-                    <option value="단기">단기 (1-6개월)</option>
-                    <option value="중기">중기 (6개월-2년)</option>
-                    <option value="장기" selected>장기 (2년 이상)</option>
+                    <option value="W1_4">단기 (1주-4주)</option>
+                    <option value="M1_6" selected>중기 (1-6개월)</option>
+                    <option value="M6P">장기 (6개월 이상)</option>
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="risk">리스크 성향</label>
                 <select id="risk">
-                    <option value="보수">보수적 - 안정성 우선</option>
-                    <option value="중립" selected>중립 - 균형 추구</option>
-                    <option value="공격">공격적 - 높은 수익 추구</option>
+                    <option value="LOW">보수적 - 안정성 우선</option>
+                    <option value="MEDIUM" selected>중립 - 균형 추구</option>
+                    <option value="HIGH">공격적 - 높은 수익 추구</option>
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="goal">투자 목표</label>
                 <select id="goal">
-                    <option value="배당" selected>배당 - 안정적인 배당 수익</option>
-                    <option value="성장">성장 - 자본 이득</option>
-                    <option value="균형">균형 - 배당과 성장 조화</option>
+                    <option value="STABILITY">안정성 - 안정적인 수익</option>
+                    <option value="BALANCED" selected>균형 - 안정과 성장 조화</option>
+                    <option value="GROWTH">성장 - 자본 이득 극대화</option>
+                    <option value="THEME">테마 - 특정 테마 투자</option>
                 </select>
             </div>
 
