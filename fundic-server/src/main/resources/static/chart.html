@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>주식 차트 - Fundic</title>
+    <title>AI 투자 분석 - Fundic</title>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1600px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
@@ -30,17 +30,13 @@
             border-radius: 14px;
             margin-bottom: 20px;
             box-shadow: 0 12px 30px rgba(2, 6, 23, 0.18);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 16px;
         }
 
-        .header-left {
+        .header-top {
             display: flex;
             align-items: center;
             gap: 16px;
+            margin-bottom: 16px;
         }
 
         .back-btn {
@@ -77,90 +73,23 @@
             font-weight: 600;
         }
 
-        .price-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #0f172a;
-        }
-
-        .current-price {
-            font-size: 1.5em;
-            font-weight: 800;
-        }
-
-        .price-change {
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 0.9em;
-        }
-
-        .price-up {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .price-down {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        /* 2-column layout */
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 20px;
-        }
-
-        .chart-section {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 14px;
-            padding: 26px;
-            box-shadow: 0 12px 30px rgba(2, 6, 23, 0.18);
-        }
-
         .ai-section {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 14px;
             padding: 26px;
             box-shadow: 0 12px 30px rgba(2, 6, 23, 0.18);
-            max-height: calc(100vh - 180px);
-            overflow-y: auto;
         }
 
         .section-title {
-            font-size: 1.3em;
+            font-size: 1.5em;
             font-weight: 800;
             color: #1e40af;
-            margin-bottom: 16px;
-            padding-bottom: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
             border-bottom: 3px solid rgba(37, 99, 235, 0.18);
-        }
-
-        #chart-container {
-            width: 100%;
-            height: 500px;
-            margin-bottom: 16px;
-        }
-
-        #volume-chart {
-            width: 100%;
-            height: 120px;
-            margin-bottom: 16px;
-        }
-
-        #rsi-chart {
-            width: 100%;
-            height: 120px;
-        }
-
-        .chart-subtitle {
-            font-size: 0.9em;
-            font-weight: 700;
-            color: #64748b;
-            margin-bottom: 8px;
-            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .ai-btn {
@@ -168,13 +97,13 @@
             background: linear-gradient(135deg, #16a34a, #15803d);
             color: #fff;
             border: none;
-            padding: 14px 20px;
+            padding: 16px 24px;
             border-radius: 10px;
             font-weight: 700;
             cursor: pointer;
             transition: 0.2s;
-            font-size: 1em;
-            margin-bottom: 16px;
+            font-size: 1.1em;
+            margin-bottom: 20px;
         }
 
         .ai-btn:hover {
@@ -190,10 +119,10 @@
 
         .loading {
             text-align: center;
-            padding: 40px 20px;
+            padding: 60px 20px;
             color: #1e40af;
             font-weight: 700;
-            font-size: 1em;
+            font-size: 1.1em;
         }
 
         .loading::after {
@@ -209,15 +138,16 @@
 
         .analysis-result {
             color: #0f172a;
-            line-height: 1.7;
+            line-height: 1.8;
+            font-size: 1.05em;
         }
 
         .analysis-result h2 {
-            font-size: 1.2em;
+            font-size: 1.3em;
             color: #1e40af;
-            margin-top: 20px;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
             border-bottom: 2px solid rgba(37, 99, 235, 0.18);
         }
 
@@ -225,12 +155,20 @@
             margin-top: 0;
         }
 
+        .analysis-result h3 {
+            font-size: 1.1em;
+            color: #64748b;
+            margin-top: 16px;
+            margin-bottom: 8px;
+        }
+
         .analysis-result ul {
-            padding-left: 20px;
+            padding-left: 24px;
+            margin-bottom: 12px;
         }
 
         .analysis-result li {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .analysis-result strong {
@@ -241,38 +179,45 @@
             background: #fef2f2;
             border: 2px solid #dc2626;
             border-radius: 10px;
-            padding: 16px;
+            padding: 20px;
             color: #7f1d1d;
         }
 
         .error-box h3 {
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             color: #dc2626;
         }
 
         .info-badge {
             display: inline-block;
-            padding: 4px 10px;
+            padding: 6px 14px;
             border-radius: 999px;
-            font-size: 0.85em;
+            font-size: 0.75em;
             font-weight: 700;
             background: rgba(37, 99, 235, 0.1);
             color: #1e40af;
-            margin-left: 8px;
         }
 
-        @media (max-width: 1200px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
+        .analysis-meta {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(37, 99, 235, 0.08);
+            border-radius: 10px;
+            font-size: 0.95em;
+            color: #64748b;
+            border-left: 4px solid #2563eb;
+        }
 
-            .ai-section {
-                max-height: none;
-            }
+        .analysis-meta strong {
+            color: #1e40af;
         }
 
         @media (max-width: 768px) {
-            .header {
+            .container {
+                padding: 10px;
+            }
+
+            .header-top {
                 flex-direction: column;
                 align-items: flex-start;
             }
@@ -281,12 +226,8 @@
                 font-size: 1.4em;
             }
 
-            #chart-container {
-                height: 350px;
-            }
-
-            #volume-chart, #rsi-chart {
-                height: 100px;
+            .section-title {
+                font-size: 1.3em;
             }
         }
     </style>
@@ -295,52 +236,29 @@
 <div class="container">
     <!-- Header -->
     <div class="header">
-        <div class="header-left">
+        <div class="header-top">
             <button class="back-btn" onclick="window.close()">← 돌아가기</button>
             <div class="stock-info">
                 <div class="stock-name" id="stock-name">로딩 중...</div>
                 <div class="stock-code" id="stock-code-display"></div>
             </div>
         </div>
-        <div class="price-info" id="price-info" style="display: none;">
-            <div class="current-price" id="current-price"></div>
-            <div class="price-change" id="price-change"></div>
-        </div>
     </div>
 
-    <!-- Main Content: 2-column layout -->
-    <div class="main-content">
-        <!-- Left: Chart Section -->
-        <div class="chart-section">
-            <div class="section-title">📈 캔들스틱 차트 <span class="info-badge">DB 데이터</span></div>
-
-            <div id="chart-container"></div>
-
-            <div class="chart-subtitle">📊 거래량</div>
-            <div id="volume-chart"></div>
-
-            <div class="chart-subtitle">📉 RSI (14일)</div>
-            <div id="rsi-chart"></div>
+    <!-- AI Analysis Section -->
+    <div class="ai-section">
+        <div class="section-title">
+            🤖 AI 투자 분석
+            <span class="info-badge">Rule-based</span>
         </div>
 
-        <!-- Right: AI Analysis Section -->
-        <div class="ai-section">
-            <div class="section-title">
-                🤖 AI 종목 분석
-                <span class="info-badge">Rule-based</span>
-            </div>
+        <button class="ai-btn" id="analyze-btn" onclick="analyzeStock()">
+            📊 AI 분석 시작하기
+        </button>
 
-            <button class="ai-btn" id="analyze-btn" onclick="analyzeStock()">
-                AI 분석 시작
-            </button>
-
-            <div id="ai-result"></div>
-        </div>
+        <div id="ai-result"></div>
     </div>
 </div>
-
-<!-- Lightweight Charts Library -->
-<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 
 <script>
     // URL에서 종목 코드와 이름 가져오기
@@ -351,230 +269,6 @@
     // 헤더 업데이트
     document.getElementById('stock-name').textContent = stockName;
     document.getElementById('stock-code-display').textContent = `종목코드: ${stockCode || '없음'}`;
-
-    let mainChart, volumeChart, rsiChart;
-    let candlestickSeries, volumeSeries, rsiSeries, ma20Series, ma60Series;
-
-    // 차트 로드
-    if (stockCode) {
-        loadChartData(stockCode);
-    } else {
-        showError('종목 코드가 제공되지 않았습니다.');
-    }
-
-    async function loadChartData(code) {
-        try {
-            const response = await fetch(`/api/chart/candlestick?stockCode=${code}&days=60`);
-            const data = await response.json();
-
-            if (!data.success) {
-                showError(data.message || '차트 데이터를 불러올 수 없습니다.');
-                return;
-            }
-
-            // 가격 정보 표시
-            displayPriceInfo(data.stockInfo, data.candlestick);
-
-            // 차트 생성
-            createCharts(data);
-
-        } catch (error) {
-            console.error('차트 데이터 로드 실패:', error);
-            showError(`차트 데이터 로드 중 오류 발생: ${error.message}`);
-        }
-    }
-
-    function displayPriceInfo(stockInfo, candlestickData) {
-        if (candlestickData.length < 2) return;
-
-        const latest = candlestickData[candlestickData.length - 1];
-        const previous = candlestickData[candlestickData.length - 2];
-
-        const priceChange = latest.close - previous.close;
-        const priceChangePercent = (priceChange / previous.close) * 100;
-
-        document.getElementById('current-price').textContent =
-            latest.close.toLocaleString() + '원';
-
-        const changeEl = document.getElementById('price-change');
-        const isUp = priceChange >= 0;
-        changeEl.className = 'price-change ' + (isUp ? 'price-up' : 'price-down');
-        changeEl.textContent =
-            (isUp ? '+' : '') + priceChange.toLocaleString() + '원 (' +
-            (isUp ? '+' : '') + priceChangePercent.toFixed(2) + '%)';
-
-        document.getElementById('price-info').style.display = 'flex';
-    }
-
-    function createCharts(data) {
-        // 메인 캔들스틱 차트
-        mainChart = LightweightCharts.createChart(document.getElementById('chart-container'), {
-            width: document.getElementById('chart-container').clientWidth,
-            height: 500,
-            layout: {
-                background: { color: '#ffffff' },
-                textColor: '#333',
-            },
-            grid: {
-                vertLines: { color: '#f0f0f0' },
-                horzLines: { color: '#f0f0f0' },
-            },
-            timeScale: {
-                timeVisible: true,
-                secondsVisible: false,
-            },
-            localization: {
-                locale: 'ko-KR',
-                dateFormat: 'yyyy-MM-dd',
-            },
-        });
-
-        // 캔들스틱 시리즈
-        candlestickSeries = mainChart.addCandlestickSeries({
-            upColor: '#26a69a',
-            downColor: '#ef5350',
-            borderVisible: false,
-            wickUpColor: '#26a69a',
-            wickDownColor: '#ef5350',
-        });
-        candlestickSeries.setData(data.candlestick);
-
-        // MA20 (파란색 선)
-        if (data.ma20 && data.ma20.length > 0) {
-            ma20Series = mainChart.addLineSeries({
-                color: '#2196F3',
-                lineWidth: 2,
-                title: 'MA20',
-            });
-            ma20Series.setData(data.ma20);
-        }
-
-        // MA60 (주황색 선)
-        if (data.ma60 && data.ma60.length > 0) {
-            ma60Series = mainChart.addLineSeries({
-                color: '#FF9800',
-                lineWidth: 2,
-                title: 'MA60',
-            });
-            ma60Series.setData(data.ma60);
-        }
-
-        // 거래량 차트
-        volumeChart = LightweightCharts.createChart(document.getElementById('volume-chart'), {
-            width: document.getElementById('volume-chart').clientWidth,
-            height: 120,
-            layout: {
-                background: { color: '#ffffff' },
-                textColor: '#333',
-            },
-            grid: {
-                vertLines: { color: '#f0f0f0' },
-                horzLines: { color: '#f0f0f0' },
-            },
-            timeScale: {
-                visible: false,
-            },
-        });
-
-        volumeSeries = volumeChart.addHistogramSeries({
-            priceFormat: {
-                type: 'volume',
-            },
-        });
-
-        // 거래량 데이터 변환 (색상 적용)
-        const volumeData = data.volume.map(v => ({
-            time: v.time,
-            value: v.value,
-            color: v.color
-        }));
-        volumeSeries.setData(volumeData);
-
-        // RSI 차트
-        if (data.rsi && data.rsi.length > 0) {
-            rsiChart = LightweightCharts.createChart(document.getElementById('rsi-chart'), {
-                width: document.getElementById('rsi-chart').clientWidth,
-                height: 120,
-                layout: {
-                    background: { color: '#ffffff' },
-                    textColor: '#333',
-                },
-                grid: {
-                    vertLines: { color: '#f0f0f0' },
-                    horzLines: { color: '#f0f0f0' },
-                },
-                timeScale: {
-                    visible: false,
-                },
-            });
-
-            rsiSeries = rsiChart.addLineSeries({
-                color: '#9C27B0',
-                lineWidth: 2,
-            });
-            rsiSeries.setData(data.rsi);
-
-            // RSI 과매수/과매도 라인
-            const rsiLine70 = rsiChart.addLineSeries({
-                color: '#EF5350',
-                lineWidth: 1,
-                lineStyle: 2, // dashed
-            });
-            const rsiLine30 = rsiChart.addLineSeries({
-                color: '#66BB6A',
-                lineWidth: 1,
-                lineStyle: 2,
-            });
-
-            // 70, 30 기준선 데이터
-            if (data.rsi.length > 0) {
-                const times = data.rsi.map(d => d.time);
-                rsiLine70.setData(times.map(t => ({ time: t, value: 70 })));
-                rsiLine30.setData(times.map(t => ({ time: t, value: 30 })));
-            }
-        }
-
-        // 차트 동기화 (time scale)
-        if (volumeChart && mainChart) {
-            mainChart.timeScale().subscribeVisibleTimeRangeChange(() => {
-                const timeRange = mainChart.timeScale().getVisibleRange();
-                if (timeRange) {
-                    volumeChart.timeScale().setVisibleRange(timeRange);
-                    if (rsiChart) rsiChart.timeScale().setVisibleRange(timeRange);
-                }
-            });
-        }
-
-        // 반응형 처리
-        window.addEventListener('resize', () => {
-            if (mainChart) {
-                mainChart.applyOptions({
-                    width: document.getElementById('chart-container').clientWidth
-                });
-            }
-            if (volumeChart) {
-                volumeChart.applyOptions({
-                    width: document.getElementById('volume-chart').clientWidth
-                });
-            }
-            if (rsiChart) {
-                rsiChart.applyOptions({
-                    width: document.getElementById('rsi-chart').clientWidth
-                });
-            }
-        });
-
-        console.log('✅ 차트 로드 완료:', data.dataPoints, '개 데이터 포인트');
-    }
-
-    function showError(message) {
-        document.getElementById('chart-container').innerHTML = `
-            <div class="error-box">
-                <h3>⚠️ 오류</h3>
-                <p>${message}</p>
-            </div>
-        `;
-    }
 
     // AI 분석 실행
     async function analyzeStock() {
@@ -588,7 +282,7 @@
 
         // 버튼 비활성화 및 로딩 표시
         analyzeBtn.disabled = true;
-        analyzeBtn.textContent = 'AI 분석 중...';
+        analyzeBtn.textContent = '🔍 AI 분석 중...';
         resultDiv.innerHTML = '<div class="loading">AI가 종목을 분석하고 있습니다</div>';
 
         try {
@@ -610,7 +304,7 @@
         } finally {
             // 버튼 재활성화
             analyzeBtn.disabled = false;
-            analyzeBtn.textContent = '다시 분석';
+            analyzeBtn.textContent = '🔄 다시 분석하기';
         }
     }
 
@@ -620,7 +314,7 @@
         // Markdown 스타일 텍스트를 HTML로 간단 변환
         let html = data.analysisText
             .replace(/## (.*?)(\n|$)/g, '<h2>$1</h2>')
-            .replace(/### (.*?)(\n|$)/g, '<h3 style="font-size:1em;color:#64748b;margin-top:12px;margin-bottom:6px;">$1</h3>')
+            .replace(/### (.*?)(\n|$)/g, '<h3>$1</h3>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/- (.*?)(\n|$)/g, '<li>$1</li>')
             .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
@@ -628,10 +322,10 @@
         resultDiv.innerHTML = `
             <div class="analysis-result">
                 ${html}
-                <div style="margin-top: 20px; padding: 12px; background: rgba(37, 99, 235, 0.1); border-radius: 8px; font-size: 0.85em; color: #64748b;">
-                    <strong>분석 기준:</strong> ${data.dataPoints}일 데이터 |
-                    <strong>현재가:</strong> ${data.latestPrice.toLocaleString()}원 |
-                    <strong>분석일:</strong> ${data.analyzedAt}
+                <div class="analysis-meta">
+                    <strong>📊 분석 기준:</strong> ${data.dataPoints}일 데이터 |
+                    <strong>💰 현재가:</strong> ${data.latestPrice.toLocaleString()}원 |
+                    <strong>📅 분석일:</strong> ${data.analyzedAt}
                 </div>
             </div>
         `;
@@ -643,7 +337,7 @@
             <div class="error-box">
                 <h3>⚠️ 분석 실패</h3>
                 <p>${message}</p>
-                <p style="margin-top: 10px; font-size: 0.9em;">
+                <p style="margin-top: 12px; font-size: 0.95em;">
                     <strong>해결 방법:</strong><br>
                     • 서버가 실행 중인지 확인하세요<br>
                     • 해당 종목의 데이터가 DB에 있는지 확인하세요<br>
