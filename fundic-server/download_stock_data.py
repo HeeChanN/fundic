@@ -12,9 +12,10 @@ import time
 from pathlib import Path
 
 # 설정
-DAYS_BACK = 30
+DAYS_BACK = 60
 OUTPUT_DIR = "./stock_data_csv"
 ERROR_LOG = "./download_errors.log"
+
 
 def main():
     print("=" * 60)
@@ -35,23 +36,38 @@ def main():
 
     # 종목 코드 파일 읽기 (또는 직접 리스트로 제공)
     # Option 1: 파일에서 읽기
-    stock_codes_file = "./stock_codes.txt"
-    if os.path.exists(stock_codes_file):
-        with open(stock_codes_file, 'r') as f:
-            stock_codes = [line.strip() for line in f if line.strip()]
-        print(f"종목 코드 파일에서 {len(stock_codes)}개 종목 로드됨")
-    else:
-        # Option 2: KRX에서 전체 종목 가져오기
-        print("KRX에서 전체 상장 종목 조회 중...")
-        krx_stocks = fdr.StockListing('KRX')
-        stock_codes = krx_stocks['Code'].tolist()
-        print(f"KRX에서 {len(stock_codes)}개 종목 로드됨")
+    stock_csv_file = "./stocks.csv"
 
-        # 종목 코드 파일로 저장 (다음 실행 시 재사용)
-        with open(stock_codes_file, 'w') as f:
-            f.write('\n'.join(stock_codes))
-        print(f"종목 코드를 {stock_codes_file}에 저장했습니다.")
+    if not os.path.exists(stock_csv_file):
+        raise FileNotFoundError(f"CSV 파일을 찾을 수 없습니다: {stock_csv_file}")
 
+    # CSV 로드
+    df = pd.read_csv(stock_csv_file)
+
+    # 종목 코드 컬럼 자동 탐색
+    possible_code_columns = ["code"]
+    code_column = None
+
+    for col in possible_code_columns:
+        if col in df.columns:
+            code_column = col
+            break
+
+    if code_column is None:
+        raise ValueError(
+            f"종목 코드 컬럼을 찾을 수 없습니다. CSV 컬럼: {df.columns.tolist()}"
+        )
+
+    # 종목 코드 리스트 추출
+    stock_codes = (
+        df[code_column]
+        .astype(str)
+        .str.zfill(6)  # 6자리 보정 (005930 같은 형태)
+        .unique()
+        .tolist()
+    )
+
+    print(f"CSV에서 {len(stock_codes)}개 종목 로드됨")
     print()
     print(f"총 {len(stock_codes)}개 종목 다운로드 시작...")
     print()
@@ -71,8 +87,8 @@ def main():
             # 데이터 다운로드
             df = fdr.DataReader(
                 code,
-                start=start_date.strftime('%Y-%m-%d'),
-                end=end_date.strftime('%Y-%m-%d')
+                start=start_date.strftime("%Y-%m-%d"),
+                end=end_date.strftime("%Y-%m-%d"),
             )
 
             if df.empty:
@@ -81,22 +97,34 @@ def main():
                 continue
 
             # 종목 코드 컬럼 추가
-            df['stock_code'] = code
-            df['trade_date'] = df.index
+            df["stock_code"] = code
+            df["trade_date"] = df.index
 
             # 컬럼명 매핑
-            df = df.rename(columns={
-                'Open': 'open_price',
-                'High': 'high_price',
-                'Low': 'low_price',
-                'Close': 'close_price',
-                'Volume': 'volume',
-                'Change': 'change_rate'
-            })
+            df = df.rename(
+                columns={
+                    "Open": "open_price",
+                    "High": "high_price",
+                    "Low": "low_price",
+                    "Close": "close_price",
+                    "Volume": "volume",
+                    "Change": "change_rate",
+                }
+            )
 
             # 필요한 컬럼만 선택
-            df = df[['stock_code', 'trade_date', 'open_price', 'high_price',
-                    'low_price', 'close_price', 'volume', 'change_rate']]
+            df = df[
+                [
+                    "stock_code",
+                    "trade_date",
+                    "open_price",
+                    "high_price",
+                    "low_price",
+                    "close_price",
+                    "volume",
+                    "change_rate",
+                ]
+            ]
 
             all_data.append(df)
             success_count += 1
@@ -106,9 +134,11 @@ def main():
                 elapsed = time.time() - start_time
                 avg_time = elapsed / idx
                 remaining = (len(stock_codes) - idx) * avg_time
-                print(f"[{idx}/{len(stock_codes)}] 진행 중... "
-                      f"(성공: {success_count}, 실패: {fail_count}, "
-                      f"예상 잔여시간: {remaining/60:.1f}분)")
+                print(
+                    f"[{idx}/{len(stock_codes)}] 진행 중... "
+                    f"(성공: {success_count}, 실패: {fail_count}, "
+                    f"예상 잔여시간: {remaining/60:.1f}분)"
+                )
 
             # API 부하 방지를 위한 짧은 대기
             time.sleep(0.05)
@@ -119,8 +149,10 @@ def main():
             fail_count += 1
 
             if idx % 100 == 0:
-                print(f"[{idx}/{len(stock_codes)}] 진행 중... "
-                      f"(성공: {success_count}, 실패: {fail_count})")
+                print(
+                    f"[{idx}/{len(stock_codes)}] 진행 중... "
+                    f"(성공: {success_count}, 실패: {fail_count})"
+                )
 
     # 전체 데이터 병합 및 저장
     if all_data:
@@ -130,14 +162,14 @@ def main():
 
         # CSV 파일로 저장
         output_file = f"{OUTPUT_DIR}/stock_prices_bulk.csv"
-        combined_df.to_csv(output_file, index=False, encoding='utf-8-sig')
+        combined_df.to_csv(output_file, index=False, encoding="utf-8-sig")
         print(f"✅ 전체 데이터 저장 완료: {output_file}")
         print(f"   총 레코드 수: {len(combined_df):,}개")
 
     # 에러 로그 저장
     if errors:
-        with open(ERROR_LOG, 'w', encoding='utf-8') as f:
-            f.write('\n'.join(errors))
+        with open(ERROR_LOG, "w", encoding="utf-8") as f:
+            f.write("\n".join(errors))
         print(f"\n⚠️  에러 로그 저장: {ERROR_LOG}")
 
     # 최종 통계
@@ -156,6 +188,7 @@ def main():
     if all_data:
         print(f"다음 단계: 아래 Java 프로그램을 실행하여 DB에 적재하세요")
         print(f"  ./gradlew run --args='load-csv {output_file}'")
+
 
 if __name__ == "__main__":
     # 필요한 패키지 확인

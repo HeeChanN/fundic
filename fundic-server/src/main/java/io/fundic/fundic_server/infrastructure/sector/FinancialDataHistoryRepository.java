@@ -36,4 +36,11 @@ public interface FinancialDataHistoryRepository extends JpaRepository<FinancialD
             Integer fiscalYear,
             Integer fiscalQuarter
     );
+
+    /**
+     * Find latest 4 quarters of financial data for AI analysis
+     */
+    @Query(value = "SELECT * FROM financial_data_history WHERE stock_id = :stockId " +
+           "ORDER BY fiscal_year DESC, fiscal_quarter DESC LIMIT 4", nativeQuery = true)
+    List<FinancialDataHistory> findTop4ByStockOrderByFiscalYearDescFiscalQuarterDesc(@Param("stockId") Long stockId);
 }

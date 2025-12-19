@@ -250,6 +250,16 @@
             font-weight:800;
         }
         .stock-table tr:hover{ background: #f1f5f9; }
+        .stock-table a{
+            color:#1e40af;
+            text-decoration:none;
+            font-weight:700;
+            transition:.2s;
+        }
+        .stock-table a:hover{
+            color:#2563eb;
+            text-decoration:underline;
+        }
 
         .weight-badge{
             display:inline-block;
@@ -696,9 +706,14 @@
 
             data.stocks.forEach(stock => {
                 const marketClass = stock.market === 'KOSPI' ? 'market-kospi' : 'market-kosdaq';
+                const chartUrl = `chart.html?code=${encodeURIComponent(stock.code)}&name=${encodeURIComponent(stock.name)}`;
                 html += `
           <tr>
-            <td><strong>${escapeHtml(stock.name)}</strong></td>
+            <td>
+              <a href="${chartUrl}" target="_blank">
+                ${escapeHtml(stock.name)} 📊
+              </a>
+            </td>
             <td>${escapeHtml(stock.code)}</td>
             <td>${escapeHtml(stock.sectorName ?? '')}</td>
             <td><span class="market-badge ${marketClass}">${escapeHtml(stock.market)}</span></td>

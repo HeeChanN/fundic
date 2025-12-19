@@ -49,4 +49,13 @@ public interface StockPriceHistoryRepository extends JpaRepository<StockPriceHis
             @Param("stockId") Long stockId,
             @Param("limit") int limit
     );
+
+    /**
+     * Find price history within date range (ordered by date ascending for analysis)
+     */
+    List<StockPriceHistory> findByStockAndTradeDateBetweenOrderByTradeDateAsc(
+            Stock stock,
+            LocalDate startDate,
+            LocalDate endDate
+    );
 }
