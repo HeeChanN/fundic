@@ -475,10 +475,10 @@
                                  card.role === 'SUPPORT' ? '서포트' : '완충';
 
                 html += `
-                    <div class="sector-item" onclick="selectSectorCard('${card.role.toLowerCase()}', '${card.sectorId}', '${card.title}')">
+                    <div class="sector-item" onclick="selectSectorCard('${card.role.toLowerCase()}', '${card.sectorId}', '${card.sectorName}','${card.title}')">
                         <h4>
                             ${roleLabel} 섹터: ${card.title}
-                            <span class="score">ID: ${card.sectorId}</span>
+                            <span class="score">분야: ${card.sectorName}</span>
                         </h4>
                         <p><strong>추천 이유:</strong> ${card.oneLineReason}</p>
                     </div>

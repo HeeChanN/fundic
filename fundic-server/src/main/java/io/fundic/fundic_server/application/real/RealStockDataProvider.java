@@ -20,7 +20,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@Profile("!local & !dev")
+@Profile("local")
 public class RealStockDataProvider implements StockDataProvider {
 
     private final KisApiClient kisApiClient;

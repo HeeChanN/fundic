@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class RecommendController {
 
-    private final RecommendService recoFacadeService;
+    private final RecommendService recommendService;
 
     /**
      * 섹터 추천 API
@@ -24,7 +24,7 @@ public class RecommendController {
      */
     @PostMapping("/recommend/sectors")
     public SectorRecommendationResDto recommendSectors(@RequestBody UserProfileRequest req) {
-        return recoFacadeService.recommendSectors(req);
+        return recommendService.recommendSectors(req);
     }
 
     /**
@@ -33,7 +33,7 @@ public class RecommendController {
      */
     @PostMapping("/portfolio")
     public PortfolioRecommendResDto recommendPortfolio(@RequestBody PortfolioRecommendRequest req) {
-        return recoFacadeService.recommendPortfolio(
+        return recommendService.recommendPortfolio(
                 req.getLeaderSectorId(),
                 req.getSupportSectorId(),
                 req.getBufferSectorId(),

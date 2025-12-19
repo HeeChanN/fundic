@@ -157,7 +157,7 @@ public class RecommendService {
                 leaderSectorId, supportSectorId, bufferSectorId);
 
         try {
-            // 포트폴리오 최적화 (종목 선택 + 포트폴리오 구성을 PortfolioAgent가 모두 수행)
+            // 포트폴리오 (종목 선택 + 포트폴리오 구성을 PortfolioAgent가 모두 수행)
             PortfolioInput portfolioInput = new PortfolioInput(
                     leaderSectorId,
                     supportSectorId,
@@ -395,6 +395,7 @@ public class RecommendService {
         return SectorRecommendationResDto.SectorCard.builder()
                 .role(role)
                 .sectorId(sector.sectorId())
+                .sectorName(sector.sectorName())
                 .title(title)
                 .oneLineReason(sector.reason())
                 .kpis(kpis)

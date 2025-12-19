@@ -5,12 +5,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.adk.agents.LlmAgent;
 import com.google.adk.events.Event;
+import com.google.adk.models.Gemini;
 import com.google.adk.runner.InMemoryRunner;
 import com.google.adk.sessions.Session;
 import com.google.genai.types.Content;
 import com.google.genai.types.Part;
 import io.fundic.fundic_server.application.SectorNameProvider;
-import io.fundic.fundic_server.config.GoogleApiConfig;
 import io.fundic.fundic_server.domain.SectorSnapshot;
 import io.reactivex.rxjava3.core.Flowable;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +19,6 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-/**
- * 섹터 선택 Agent
- * 후보 섹터 리스트에서 사용자 프로필에 맞는 Leader, Support, Buffer 섹터를 선정
- */
 @Slf4j
 @Component
 public class SectorSelectionAgent {
@@ -36,31 +32,25 @@ public class SectorSelectionAgent {
     public SectorSelectionAgent(
             ObjectMapper objectMapper,
             SectorNameProvider sectorNameProvider,
-            GoogleApiConfig googleApiConfig
+            Gemini geminiModel
     ) {
         this.objectMapper = objectMapper;
         this.sectorNameProvider = sectorNameProvider;
 
-        // Google API 키 확인 (GoogleApiConfig의 @PostConstruct에서 이미 환경 변수로 설정됨)
-        if (!googleApiConfig.isConfigured()) {
-            throw new IllegalStateException("Google API key is not configured. Please set 'google.api-key' in application.yml");
-        }
-
         this.agent = LlmAgent.builder()
                 .name("sector-selection-agent")
-                .model("gemini-2.0-flash-exp")
+                .model(geminiModel)          // ✅ 문자열 대신 Gemini 객체
                 .instruction(buildSystemPrompt())
                 .build();
 
         this.runner = new InMemoryRunner(agent);
 
-        // 기본 세션 생성
         this.defaultSession = runner
                 .sessionService()
                 .createSession(runner.appName(), "default-user")
                 .blockingGet();
 
-        log.info("SectorSelectionAgent initialized with session: {} using API key from config", defaultSession.id());
+        log.info("SectorSelectionAgent initialized with session: {}", defaultSession.id());
     }
 
     /**

@@ -1,4 +1,4 @@
-package io.fundic.fundic_server.infrastructure;
+package io.fundic.fundic_server.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

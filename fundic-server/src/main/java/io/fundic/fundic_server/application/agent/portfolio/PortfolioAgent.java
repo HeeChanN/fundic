@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.adk.agents.LlmAgent;
 import com.google.adk.events.Event;
+import com.google.adk.models.Gemini;
 import com.google.adk.runner.InMemoryRunner;
 import com.google.adk.sessions.Session;
 import com.google.genai.types.Content;
@@ -55,7 +56,7 @@ public class PortfolioAgent {
             SectorConstituentsProvider constituentsProvider,
             SectorNameProvider sectorNameProvider,
             StockRepository stockRepository,
-            GoogleApiConfig googleApiConfig
+            Gemini geminiModel
     ) {
         this.objectMapper = objectMapper;
         this.stockDataProvider = stockDataProvider;
@@ -64,14 +65,9 @@ public class PortfolioAgent {
         this.sectorNameProvider = sectorNameProvider;
         this.stockRepository = stockRepository;
 
-        // Google API 키 확인 (GoogleApiConfig의 @PostConstruct에서 이미 환경 변수로 설정됨)
-        if (!googleApiConfig.isConfigured()) {
-            throw new IllegalStateException("Google API key is not configured. Please set 'google.api-key' in application.yml");
-        }
-
         this.agent = LlmAgent.builder()
                 .name("portfolio-agent")
-                .model("gemini-2.0-flash-exp")
+                .model(geminiModel)
                 .instruction(buildSystemPrompt())
                 .build();
 

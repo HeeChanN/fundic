@@ -31,7 +31,8 @@ public class SectorRecommendationResDto {
     @Getter @Builder
     public static class SectorCard {
         private String role;           // LEADER / SUPPORT / BUFFER
-        private String sectorId;       // e.g. SEMICONDUCTOR
+        private String sectorId;
+        private String sectorName;
         private String title;          // UI title
         private String oneLineReason;  // 1줄
         private List<Kpi> kpis;        // 숫자 2개

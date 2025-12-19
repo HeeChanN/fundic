@@ -1,37 +1,3 @@
 spring:
   profiles:
     active: local
-
-  # H2 Database (for testing)
-  datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-
-  h2:
-    console:
-      enabled: true
-
-# Google ADK 설정
-google:
-  # 환경 변수가 없으면 default 값 사용
-  api-key: ${GOOGLE_API_KEY:AIzaSyAcDlbdN04tCNNq6dQ9c5nio3w14GC8XjM}
-
-# Agent 기본 설정
-agent:
-  default-model: ${AGENT_MODEL:gemini-2.0-flash-exp}
-  default-temperature: ${AGENT_TEMPERATURE:0.3}
-  default-max-tokens: ${AGENT_MAX_TOKENS:8192}
-  fallback:
-    enabled: true
-  monitoring:
-    enabled: true

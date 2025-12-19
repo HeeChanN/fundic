@@ -17,7 +17,7 @@ import java.util.Random;
  */
 @Slf4j
 @Component
-@Profile({"local", "dev"})
+@Profile({"dev"})
 public class StubStockDataProvider implements StockDataProvider {
 
     private final Random random = new Random();

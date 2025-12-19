@@ -17,9 +17,4 @@ public interface AgentProvider<INPUT, OUTPUT> {
      * Agent 이름 반환 (로깅 및 모니터링용)
      */
     String getAgentName();
-
-    /**
-     * Agent 설정 반환
-     */
-    AgentConfig getConfig();
 }

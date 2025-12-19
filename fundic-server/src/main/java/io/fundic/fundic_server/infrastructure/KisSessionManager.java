@@ -1,5 +1,6 @@
 package io.fundic.fundic_server.infrastructure;
 
+import io.fundic.fundic_server.config.KisProperties;
 import io.fundic.fundic_server.infrastructure.dto.KisTokenResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
