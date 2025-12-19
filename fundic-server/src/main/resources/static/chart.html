@@ -77,6 +77,35 @@
             font-weight: 600;
         }
 
+        .price-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #0f172a;
+        }
+
+        .current-price {
+            font-size: 1.5em;
+            font-weight: 800;
+        }
+
+        .price-change {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+
+        .price-up {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .price-down {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
         /* 2-column layout */
         .main-content {
             display: grid;
@@ -109,11 +138,29 @@
             border-bottom: 3px solid rgba(37, 99, 235, 0.18);
         }
 
-        #tradingview-widget {
+        #chart-container {
             width: 100%;
-            height: 600px;
-            border-radius: 10px;
-            overflow: hidden;
+            height: 500px;
+            margin-bottom: 16px;
+        }
+
+        #volume-chart {
+            width: 100%;
+            height: 120px;
+            margin-bottom: 16px;
+        }
+
+        #rsi-chart {
+            width: 100%;
+            height: 120px;
+        }
+
+        .chart-subtitle {
+            font-size: 0.9em;
+            font-weight: 700;
+            color: #64748b;
+            margin-bottom: 8px;
+            margin-top: 16px;
         }
 
         .ai-btn {
@@ -234,8 +281,12 @@
                 font-size: 1.4em;
             }
 
-            #tradingview-widget {
-                height: 400px;
+            #chart-container {
+                height: 350px;
+            }
+
+            #volume-chart, #rsi-chart {
+                height: 100px;
             }
         }
     </style>
@@ -251,23 +302,32 @@
                 <div class="stock-code" id="stock-code-display"></div>
             </div>
         </div>
+        <div class="price-info" id="price-info" style="display: none;">
+            <div class="current-price" id="current-price"></div>
+            <div class="price-change" id="price-change"></div>
+        </div>
     </div>
 
     <!-- Main Content: 2-column layout -->
     <div class="main-content">
         <!-- Left: Chart Section -->
         <div class="chart-section">
-            <div class="section-title">📈 실시간 차트</div>
-            <div id="chart-container">
-                <div class="loading">차트를 불러오는 중</div>
-            </div>
+            <div class="section-title">📈 캔들스틱 차트 <span class="info-badge">DB 데이터</span></div>
+
+            <div id="chart-container"></div>
+
+            <div class="chart-subtitle">📊 거래량</div>
+            <div id="volume-chart"></div>
+
+            <div class="chart-subtitle">📉 RSI (14일)</div>
+            <div id="rsi-chart"></div>
         </div>
 
         <!-- Right: AI Analysis Section -->
         <div class="ai-section">
             <div class="section-title">
                 🤖 AI 종목 분석
-                <span class="info-badge">Google ADK</span>
+                <span class="info-badge">Rule-based</span>
             </div>
 
             <button class="ai-btn" id="analyze-btn" onclick="analyzeStock()">
@@ -279,8 +339,8 @@
     </div>
 </div>
 
-<!-- TradingView Widget Script -->
-<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<!-- Lightweight Charts Library -->
+<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 
 <script>
     // URL에서 종목 코드와 이름 가져오기
@@ -292,59 +352,223 @@
     document.getElementById('stock-name').textContent = stockName;
     document.getElementById('stock-code-display').textContent = `종목코드: ${stockCode || '없음'}`;
 
+    let mainChart, volumeChart, rsiChart;
+    let candlestickSeries, volumeSeries, rsiSeries, ma20Series, ma60Series;
+
     // 차트 로드
     if (stockCode) {
-        loadTradingViewChart(stockCode);
+        loadChartData(stockCode);
     } else {
-        showChartError('종목 코드가 제공되지 않았습니다.');
+        showError('종목 코드가 제공되지 않았습니다.');
     }
 
-    function loadTradingViewChart(code) {
-        // 종목 코드를 6자리로 패딩 (예: 5930 -> 005930)
-        const paddedCode = code.padStart(6, '0');
-
-        // TradingView 심볼 형식: KRX:종목코드
-        const tradingViewSymbol = `KRX:${paddedCode}`;
-
+    async function loadChartData(code) {
         try {
-            // 차트 컨테이너 준비
-            const container = document.getElementById('chart-container');
-            container.innerHTML = '<div id="tradingview-widget"></div>';
+            const response = await fetch(`/api/chart/candlestick?stockCode=${code}&days=60`);
+            const data = await response.json();
 
-            // TradingView 위젯 생성
-            new TradingView.widget({
-                "width": "100%",
-                "height": 600,
-                "symbol": tradingViewSymbol,
-                "interval": "D",
-                "timezone": "Asia/Seoul",
-                "theme": "light",
-                "style": "1",
-                "locale": "kr",
-                "toolbar_bg": "#f1f3f6",
-                "enable_publishing": false,
-                "hide_side_toolbar": false,
-                "allow_symbol_change": true,
-                "details": true,
-                "hotlist": true,
-                "calendar": true,
-                "studies": [
-                    "RSI@tv-basicstudies",
-                    "MASimple@tv-basicstudies"
-                ],
-                "container_id": "tradingview-widget"
-            });
+            if (!data.success) {
+                showError(data.message || '차트 데이터를 불러올 수 없습니다.');
+                return;
+            }
 
-            console.log(`✅ TradingView 차트 로드 완료: ${tradingViewSymbol}`);
+            // 가격 정보 표시
+            displayPriceInfo(data.stockInfo, data.candlestick);
+
+            // 차트 생성
+            createCharts(data);
+
         } catch (error) {
-            console.error('TradingView 차트 로드 실패:', error);
-            showChartError(`차트 로드 중 오류가 발생했습니다: ${error.message}`);
+            console.error('차트 데이터 로드 실패:', error);
+            showError(`차트 데이터 로드 중 오류 발생: ${error.message}`);
         }
     }
 
-    function showChartError(message) {
-        const container = document.getElementById('chart-container');
-        container.innerHTML = `
+    function displayPriceInfo(stockInfo, candlestickData) {
+        if (candlestickData.length < 2) return;
+
+        const latest = candlestickData[candlestickData.length - 1];
+        const previous = candlestickData[candlestickData.length - 2];
+
+        const priceChange = latest.close - previous.close;
+        const priceChangePercent = (priceChange / previous.close) * 100;
+
+        document.getElementById('current-price').textContent =
+            latest.close.toLocaleString() + '원';
+
+        const changeEl = document.getElementById('price-change');
+        const isUp = priceChange >= 0;
+        changeEl.className = 'price-change ' + (isUp ? 'price-up' : 'price-down');
+        changeEl.textContent =
+            (isUp ? '+' : '') + priceChange.toLocaleString() + '원 (' +
+            (isUp ? '+' : '') + priceChangePercent.toFixed(2) + '%)';
+
+        document.getElementById('price-info').style.display = 'flex';
+    }
+
+    function createCharts(data) {
+        // 메인 캔들스틱 차트
+        mainChart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+            width: document.getElementById('chart-container').clientWidth,
+            height: 500,
+            layout: {
+                background: { color: '#ffffff' },
+                textColor: '#333',
+            },
+            grid: {
+                vertLines: { color: '#f0f0f0' },
+                horzLines: { color: '#f0f0f0' },
+            },
+            timeScale: {
+                timeVisible: true,
+                secondsVisible: false,
+            },
+            localization: {
+                locale: 'ko-KR',
+                dateFormat: 'yyyy-MM-dd',
+            },
+        });
+
+        // 캔들스틱 시리즈
+        candlestickSeries = mainChart.addCandlestickSeries({
+            upColor: '#26a69a',
+            downColor: '#ef5350',
+            borderVisible: false,
+            wickUpColor: '#26a69a',
+            wickDownColor: '#ef5350',
+        });
+        candlestickSeries.setData(data.candlestick);
+
+        // MA20 (파란색 선)
+        if (data.ma20 && data.ma20.length > 0) {
+            ma20Series = mainChart.addLineSeries({
+                color: '#2196F3',
+                lineWidth: 2,
+                title: 'MA20',
+            });
+            ma20Series.setData(data.ma20);
+        }
+
+        // MA60 (주황색 선)
+        if (data.ma60 && data.ma60.length > 0) {
+            ma60Series = mainChart.addLineSeries({
+                color: '#FF9800',
+                lineWidth: 2,
+                title: 'MA60',
+            });
+            ma60Series.setData(data.ma60);
+        }
+
+        // 거래량 차트
+        volumeChart = LightweightCharts.createChart(document.getElementById('volume-chart'), {
+            width: document.getElementById('volume-chart').clientWidth,
+            height: 120,
+            layout: {
+                background: { color: '#ffffff' },
+                textColor: '#333',
+            },
+            grid: {
+                vertLines: { color: '#f0f0f0' },
+                horzLines: { color: '#f0f0f0' },
+            },
+            timeScale: {
+                visible: false,
+            },
+        });
+
+        volumeSeries = volumeChart.addHistogramSeries({
+            priceFormat: {
+                type: 'volume',
+            },
+        });
+
+        // 거래량 데이터 변환 (색상 적용)
+        const volumeData = data.volume.map(v => ({
+            time: v.time,
+            value: v.value,
+            color: v.color
+        }));
+        volumeSeries.setData(volumeData);
+
+        // RSI 차트
+        if (data.rsi && data.rsi.length > 0) {
+            rsiChart = LightweightCharts.createChart(document.getElementById('rsi-chart'), {
+                width: document.getElementById('rsi-chart').clientWidth,
+                height: 120,
+                layout: {
+                    background: { color: '#ffffff' },
+                    textColor: '#333',
+                },
+                grid: {
+                    vertLines: { color: '#f0f0f0' },
+                    horzLines: { color: '#f0f0f0' },
+                },
+                timeScale: {
+                    visible: false,
+                },
+            });
+
+            rsiSeries = rsiChart.addLineSeries({
+                color: '#9C27B0',
+                lineWidth: 2,
+            });
+            rsiSeries.setData(data.rsi);
+
+            // RSI 과매수/과매도 라인
+            const rsiLine70 = rsiChart.addLineSeries({
+                color: '#EF5350',
+                lineWidth: 1,
+                lineStyle: 2, // dashed
+            });
+            const rsiLine30 = rsiChart.addLineSeries({
+                color: '#66BB6A',
+                lineWidth: 1,
+                lineStyle: 2,
+            });
+
+            // 70, 30 기준선 데이터
+            if (data.rsi.length > 0) {
+                const times = data.rsi.map(d => d.time);
+                rsiLine70.setData(times.map(t => ({ time: t, value: 70 })));
+                rsiLine30.setData(times.map(t => ({ time: t, value: 30 })));
+            }
+        }
+
+        // 차트 동기화 (time scale)
+        if (volumeChart && mainChart) {
+            mainChart.timeScale().subscribeVisibleTimeRangeChange(() => {
+                const timeRange = mainChart.timeScale().getVisibleRange();
+                if (timeRange) {
+                    volumeChart.timeScale().setVisibleRange(timeRange);
+                    if (rsiChart) rsiChart.timeScale().setVisibleRange(timeRange);
+                }
+            });
+        }
+
+        // 반응형 처리
+        window.addEventListener('resize', () => {
+            if (mainChart) {
+                mainChart.applyOptions({
+                    width: document.getElementById('chart-container').clientWidth
+                });
+            }
+            if (volumeChart) {
+                volumeChart.applyOptions({
+                    width: document.getElementById('volume-chart').clientWidth
+                });
+            }
+            if (rsiChart) {
+                rsiChart.applyOptions({
+                    width: document.getElementById('rsi-chart').clientWidth
+                });
+            }
+        });
+
+        console.log('✅ 차트 로드 완료:', data.dataPoints, '개 데이터 포인트');
+    }
+
+    function showError(message) {
+        document.getElementById('chart-container').innerHTML = `
             <div class="error-box">
                 <h3>⚠️ 오류</h3>
                 <p>${message}</p>
@@ -377,12 +601,12 @@
             if (result.success) {
                 displayAnalysisResult(result.data);
             } else {
-                displayError(result.message || '분석 중 오류가 발생했습니다.');
+                displayAnalysisError(result.message || '분석 중 오류가 발생했습니다.');
             }
 
         } catch (error) {
             console.error('AI 분석 오류:', error);
-            displayError(`분석 요청 실패: ${error.message}`);
+            displayAnalysisError(`분석 요청 실패: ${error.message}`);
         } finally {
             // 버튼 재활성화
             analyzeBtn.disabled = false;
@@ -395,10 +619,11 @@
 
         // Markdown 스타일 텍스트를 HTML로 간단 변환
         let html = data.analysisText
-            .replace(/## (.*?)(\n|$)/g, '<h2>$1</h2>')  // ## 제목
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // **굵게**
-            .replace(/- (.*?)(\n|$)/g, '<li>$1</li>')  // - 리스트
-            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');  // 리스트 감싸기
+            .replace(/## (.*?)(\n|$)/g, '<h2>$1</h2>')
+            .replace(/### (.*?)(\n|$)/g, '<h3 style="font-size:1em;color:#64748b;margin-top:12px;margin-bottom:6px;">$1</h3>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/- (.*?)(\n|$)/g, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
 
         resultDiv.innerHTML = `
             <div class="analysis-result">
@@ -412,7 +637,7 @@
         `;
     }
 
-    function displayError(message) {
+    function displayAnalysisError(message) {
         const resultDiv = document.getElementById('ai-result');
         resultDiv.innerHTML = `
             <div class="error-box">
