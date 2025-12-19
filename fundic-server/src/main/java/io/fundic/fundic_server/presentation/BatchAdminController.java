@@ -1,5 +1,6 @@
 package io.fundic.fundic_server.presentation;
 
+import io.fundic.fundic_server.batch.CsvDataLoader;
 import io.fundic.fundic_server.batch.StockDataBatchLoader;
 import io.fundic.fundic_server.infrastructure.sector.StockPriceHistoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BatchAdminController {
 
     private final StockDataBatchLoader batchLoader;
+    private final CsvDataLoader csvDataLoader;
     private final StockPriceHistoryRepository priceHistoryRepository;
 
     // 백필 진행 상태 추적
@@ -224,6 +226,43 @@ public class BatchAdminController {
             return ResponseEntity.internalServerError().body(Map.of(
                     "success", false,
                     "message", "분기별 데이터 로드 실패: " + e.getMessage()
+            ));
+        }
+    }
+
+    /**
+     * CSV 파일에서 데이터 로드
+     * POST /api/admin/batch/load-csv?filePath=/path/to/file.csv
+     *
+     * @param filePath CSV 파일 경로
+     * @return 로드 결과
+     */
+    @PostMapping("/load-csv")
+    public ResponseEntity<?> loadFromCsv(@RequestParam String filePath) {
+        try {
+            log.info("CSV 파일 로드 요청: {}", filePath);
+
+            // 비동기로 실행
+            new Thread(() -> {
+                try {
+                    csvDataLoader.loadFromCsv(filePath);
+                    log.info("CSV 로드 완료: {}", filePath);
+                } catch (Exception e) {
+                    log.error("CSV 로드 실패: {}", filePath, e);
+                }
+            }).start();
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "CSV 파일 로드가 시작되었습니다.",
+                    "filePath", filePath,
+                    "note", "진행 상황은 로그를 확인하세요."
+            ));
+        } catch (Exception e) {
+            log.error("CSV 로드 시작 실패", e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "CSV 로드 실패: " + e.getMessage()
             ));
         }
     }

@@ -16,10 +16,10 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class RateLimiter {
 
-    // 설정 가능한 제한값
-    private static final int MAX_REQUESTS_PER_SECOND = 5;      // 초당 5회 (안전하게)
-    private static final int MAX_REQUESTS_PER_MINUTE = 200;    // 분당 200회
-    private static final int MAX_REQUESTS_PER_HOUR = 10000;    // 시간당 10,000회
+    // 설정 가능한 제한값 (KIS 모의투자 API 제한 고려)
+    private static final int MAX_REQUESTS_PER_SECOND = 2;      // 초당 2회 (매우 안전)
+    private static final int MAX_REQUESTS_PER_MINUTE = 100;    // 분당 100회
+    private static final int MAX_REQUESTS_PER_HOUR = 5000;     // 시간당 5,000회
 
     // 카운터
     private final AtomicInteger requestsThisSecond = new AtomicInteger(0);
