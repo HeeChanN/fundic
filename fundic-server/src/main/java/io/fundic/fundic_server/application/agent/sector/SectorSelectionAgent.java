@@ -155,7 +155,6 @@ public class SectorSelectionAgent {
                 - 투자 기간: %s
                 - 리스크 성향: %s
                 - 목표: %s
-                - 관심 키워드: %s
 
                 **분석 대상 섹터들**:
                 %s
@@ -166,7 +165,6 @@ public class SectorSelectionAgent {
                 input.userProfile().getHorizon(),
                 input.userProfile().getRisk(),
                 input.userProfile().getGoal(),
-                String.join(", ", input.userProfile().getThemeKeywords()),
                 sectorsInfo
         );
     }

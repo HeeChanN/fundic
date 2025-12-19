@@ -232,7 +232,7 @@ public class BatchAdminController {
 
     /**
      * CSV 파일에서 데이터 로드
-     * POST /api/admin/batch/load-csv?filePath=/path/to/file.csv
+     * POST /api/admin/batch/load-csv?filePath=/Users/ahc70/Desktop/personal_project/fundic/fundic-server/src/main/resources/data/ohlcv_merged.csv
      *
      * @param filePath CSV 파일 경로
      * @return 로드 결과

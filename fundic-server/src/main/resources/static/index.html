@@ -1,313 +1,303 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Fundic - AI 포트폴리오 추천 시스템</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root{
+            /* Trust theme (blue/navy + neutral) */
+            --bg0:#0b1220;
+            --bg1:#0f1b33;
+            --card:#ffffff;
+            --text:#0f172a;
+            --muted:#64748b;
+            --line:#e2e8f0;
+            --brand:#2563eb;         /* primary blue */
+            --brand2:#1e40af;        /* deep navy */
+            --brandSoft:#eff6ff;
+            --success:#16a34a;
+            --danger:#dc2626;
+            --warn:#f59e0b;
+            --shadow: 0 12px 30px rgba(2,6,23,.18);
+            --shadow2: 0 6px 16px rgba(2,6,23,.12);
+            --radius:14px;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+        *{ margin:0; padding:0; box-sizing:border-box; }
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+            background: radial-gradient(1100px 600px at 20% 10%, rgba(37,99,235,.35), transparent 60%),
+            radial-gradient(900px 500px at 80% 20%, rgba(30,64,175,.35), transparent 55%),
+            linear-gradient(180deg, var(--bg0), var(--bg1));
+            min-height:100vh;
+            padding:20px;
+            color:#fff;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        .container{ max-width:1100px; margin:0 auto; }
+        .header{
+            text-align:center;
+            margin: 18px 0 34px;
         }
-
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
+        .header h1{
+            font-size: 2.6em;
+            letter-spacing:-0.02em;
+            margin-bottom:10px;
         }
+        .header p{ font-size:1.05em; opacity:.88; }
 
-        .header h1 {
-            font-size: 3em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        .card{
+            background: var(--card);
+            color: var(--text);
+            border-radius: var(--radius);
+            padding: 26px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(226,232,240,.9);
         }
-
-        .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .card h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.8em;
-            border-bottom: 3px solid #667eea;
+        .card h2{
+            font-size:1.5em;
+            margin-bottom: 16px;
             padding-bottom: 10px;
+            border-bottom: 3px solid rgba(37,99,235,.18);
+            display:flex;
+            align-items:center;
+            gap:10px;
         }
 
-        .form-group {
-            margin-bottom: 20px;
+        .muted{ color: var(--muted); }
+        .divider{ height:1px; background: var(--line); margin: 18px 0; }
+
+        .grid-2{
+            display:grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        @media (max-width: 800px){
+            .grid-2{ grid-template-columns: 1fr; }
         }
 
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            color: #555;
+        .form-group{ margin-bottom: 14px; }
+        .form-group label{
+            display:block;
+            font-weight:700;
+            color:#0f172a;
             margin-bottom: 8px;
-            font-size: 1.05em;
+            font-size: .98em;
         }
-
-        .form-group select,
-        .form-group input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 1em;
-            transition: all 0.3s;
-        }
-
-        .form-group select:focus,
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .form-group small {
-            display: block;
-            color: #888;
-            margin-top: 5px;
-            font-size: 0.9em;
-        }
-
-        .sector-input-group {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-        }
-
-        button {
-            flex: 1;
-            padding: 15px 30px;
-            font-size: 1.1em;
-            font-weight: 600;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        .result {
-            margin-top: 20px;
-        }
-
-        .result-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .result-header h3 {
-            color: #667eea;
-            font-size: 1.5em;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 600;
-        }
-
-        .badge-success {
-            background: #10b981;
-            color: white;
-        }
-
-        .badge-error {
-            background: #ef4444;
-            color: white;
-        }
-
-        .result-content {
-            background: #f8fafc;
-            border-left: 4px solid #667eea;
-            padding: 20px;
-            border-radius: 8px;
-        }
-
-        .sector-item {
-            background: white;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            border: 2px solid #e0e0e0;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .sector-item:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-        }
-
-        .sector-item.selected {
-            border-color: #667eea;
-            background: #f0f4ff;
-        }
-
-        .sector-item h4 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 1.2em;
-        }
-
-        .sector-item .score {
-            display: inline-block;
-            background: #667eea;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-weight: 600;
-            margin-left: 10px;
-        }
-
-        .stock-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        .stock-table th,
-        .stock-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .stock-table th {
-            background: #667eea;
-            color: white;
-            font-weight: 600;
-        }
-
-        .stock-table tr:hover {
-            background: #f8fafc;
-        }
-
-        .weight-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            background: #10b981;
-            color: white;
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-
-        .market-badge {
-            display: inline-block;
-            padding: 3px 8px;
+        select,input{
+            width:100%;
+            padding: 12px 14px;
+            border: 1.5px solid var(--line);
             border-radius: 10px;
-            font-size: 0.85em;
-            font-weight: 600;
+            font-size: 1em;
+            transition: .2s;
+            background:#fff;
+        }
+        select:focus,input:focus{
+            outline:none;
+            border-color: rgba(37,99,235,.65);
+            box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+        }
+        small{ display:block; margin-top:6px; color: var(--muted); }
+
+        .pill-row{ display:flex; flex-wrap:wrap; gap:10px; }
+        .pill{
+            border:1px solid var(--line);
+            background:#fff;
+            color:#0f172a;
+            padding: 10px 12px;
+            border-radius: 999px;
+            cursor:pointer;
+            transition:.18s;
+            box-shadow: var(--shadow2);
+            font-weight:700;
+            font-size:.95em;
+            user-select:none;
+        }
+        .pill:hover{ transform: translateY(-1px); border-color: rgba(37,99,235,.45); }
+        .pill.selected{
+            background: var(--brandSoft);
+            border-color: rgba(37,99,235,.65);
+            color: var(--brand2);
+        }
+        .pill .sub{ font-weight:600; color: var(--muted); margin-left:8px; }
+
+        .cta-row{ display:flex; gap: 12px; margin-top: 14px; }
+        @media (max-width: 800px){
+            .cta-row{ flex-direction:column; }
         }
 
-        .market-kospi {
-            background: #3b82f6;
-            color: white;
+        button{
+            flex:1;
+            padding: 14px 18px;
+            border: none;
+            border-radius: 12px;
+            cursor:pointer;
+            font-weight: 800;
+            font-size: 1.02em;
+            transition: .2s;
+            letter-spacing:.2px;
+        }
+        .btn-primary{
+            background: linear-gradient(135deg, var(--brand), var(--brand2));
+            color:#fff;
+        }
+        .btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(37,99,235,.35); }
+        .btn-ghost{
+            background: rgba(255,255,255,.9);
+            color: var(--brand2);
+            border: 1.5px solid rgba(37,99,235,.25);
+        }
+        .btn-ghost:hover{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(2,6,23,.12); }
+
+        button:disabled{
+            opacity:.55;
+            cursor:not-allowed;
+            transform:none !important;
+            box-shadow:none !important;
         }
 
-        .market-kosdaq {
-            background: #8b5cf6;
-            color: white;
+        .step{
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(37,99,235,.1);
+            color: var(--brand2);
+            font-weight: 800;
+            font-size:.9em;
         }
 
-        .loading {
-            text-align: center;
-            color: #667eea;
-            font-size: 1.2em;
-            padding: 20px;
+        .result{
+            margin-top: 10px;
+        }
+        .result-header{
+            display:flex;
+            align-items:center;
+            justify-content: space-between;
+            gap:10px;
+            margin-bottom: 12px;
+        }
+        .badge{
+            display:inline-block;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: .88em;
+            font-weight: 800;
+            color:#fff;
+        }
+        .badge-success{ background: var(--success); }
+        .badge-error{ background: var(--danger); }
+
+        .result-content{
+            background: #f8fafc;
+            border-left: 4px solid rgba(37,99,235,.75);
+            padding: 18px;
+            border-radius: 12px;
         }
 
-        .loading::after {
-            content: '...';
-            animation: dots 1.5s steps(4, end) infinite;
+        .loading{
+            text-align:center;
+            color: var(--brand2);
+            font-weight:800;
+            padding: 18px;
+        }
+        .loading::after{
+            content:'...';
+            animation: dots 1.5s steps(4,end) infinite;
+        }
+        @keyframes dots{
+            0%,20%{ content:'.'; }
+            40%{ content:'..'; }
+            60%,100%{ content:'...'; }
         }
 
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
+        .error-message{
+            background:#fef2f2;
+            color:#7f1d1d;
+            padding: 14px;
+            border-radius: 12px;
+            border-left: 4px solid var(--danger);
         }
 
-        .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #c33;
+        .hint-box{
+            background: rgba(37,99,235,.06);
+            border: 1px solid rgba(37,99,235,.18);
+            padding: 14px;
+            border-radius: 12px;
+            color: #0f172a;
         }
+
+        .stock-table{
+            width:100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            overflow:hidden;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+        }
+        .stock-table th, .stock-table td{
+            padding: 12px;
+            border-bottom: 1px solid var(--line);
+            text-align:left;
+        }
+        .stock-table th{
+            background: rgba(30,64,175,.95);
+            color:#fff;
+            font-weight:800;
+        }
+        .stock-table tr:hover{ background: #f1f5f9; }
+
+        .weight-badge{
+            display:inline-block;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: var(--success);
+            color:#fff;
+            font-weight: 800;
+            font-size:.9em;
+        }
+        .market-badge{
+            display:inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size:.86em;
+            font-weight: 800;
+            color:#fff;
+        }
+        .market-kospi{ background: #1d4ed8; }
+        .market-kosdaq{ background: #6d28d9; }
+
+        .counter{
+            display:flex;
+            align-items:center;
+            justify-content: space-between;
+            gap:10px;
+            margin-top: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border:1px solid var(--line);
+            background:#fff;
+        }
+        .counter strong{ color: var(--brand2); }
     </style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🎯 Fundic</h1>
-            <p>AI 기반 포트폴리오 추천 시스템</p>
-        </div>
+<div class="container">
+    <div class="header">
+        <h1>Fundic</h1>
+        <p>AI 기반 포트폴리오 추천 시스템</p>
+    </div>
 
-        <div class="card">
-            <h2>📊 투자 프로필 입력</h2>
+    <!-- STEP 0: 투자 프로필 -->
+    <div class="card" id="profile-card">
+        <h2>투자 프로필 <span class="step">Step 0</span></h2>
 
+        <div class="grid-2">
             <div class="form-group">
                 <label for="horizon">투자 기간</label>
                 <select id="horizon">
@@ -325,7 +315,9 @@
                     <option value="HIGH">공격적 - 높은 수익 추구</option>
                 </select>
             </div>
+        </div>
 
+        <div class="grid-2">
             <div class="form-group">
                 <label for="goal">투자 목표</label>
                 <select id="goal">
@@ -335,290 +327,416 @@
                     <option value="THEME">테마 - 특정 테마 투자</option>
                 </select>
             </div>
-
-            <div class="form-group">
-                <label for="keywords">관심 키워드</label>
-                <input type="text" id="keywords" placeholder="예: 반도체, AI, 2차전지" value="반도체, AI">
-                <small>쉼표(,)로 구분하여 여러 키워드를 입력하세요</small>
-            </div>
-
-            <button class="btn-primary" onclick="recommendSectors()" style="width: 100%;">
-                🎯 1단계: 섹터 추천받기
-            </button>
         </div>
 
-        <div id="sector-selection" class="card" style="display: none;">
-            <h2>🎯 추천 섹터 선택</h2>
-            <p style="color: #666; margin-bottom: 20px;">아래 추천 섹터를 클릭하여 선택하거나, 직접 섹터 ID를 입력하세요.</p>
+        <div class="divider"></div>
 
-            <div id="sector-cards"></div>
+        <!-- STEP 1: sector 선택 방식 -->
+        <h2 style="margin-bottom:12px;">Sector 선택 방식 <span class="step">Step 1</span></h2>
+        <p class="muted" style="margin-bottom:14px;">
+            섹터는 <strong>3개</strong>를 선택합니다. (최대 3개, 3개가 채워지면 포트폴리오 추천 가능)
+        </p>
 
-            <div style="margin-top: 30px;">
-                <h3 style="color: #333; margin-bottom: 15px;">또는 직접 입력</h3>
-                <div class="sector-input-group">
-                    <div class="form-group">
-                        <label for="leaderSectorId">리더 섹터 ID</label>
-                        <input type="text" id="leaderSectorId" placeholder="예: 1">
-                    </div>
-                    <div class="form-group">
-                        <label for="supportSectorId">서포트 섹터 ID</label>
-                        <input type="text" id="supportSectorId" placeholder="예: 5">
-                    </div>
-                    <div class="form-group">
-                        <label for="bufferSectorId">완충 섹터 ID</label>
-                        <input type="text" id="bufferSectorId" placeholder="예: 8">
-                    </div>
-                </div>
-            </div>
-
-            <button class="btn-secondary" onclick="recommendPortfolio()" style="width: 100%; margin-top: 20px;">
-                💼 2단계: 포트폴리오 구성하기
+        <div class="cta-row">
+            <button class="btn-primary" onclick="startManualSectorFlow()">
+                1. Sector 직접 선택
             </button>
-        </div>
-
-        <div id="result" class="card" style="display: none;">
-            <div class="result">
-                <div class="result-header">
-                    <h3>📈 포트폴리오 추천 결과</h3>
-                    <span id="result-badge" class="badge"></span>
-                </div>
-                <div id="result-content" class="result-content"></div>
-            </div>
+            <button class="btn-primary" onclick="startAiSectorFlow()">
+                2. AI 기반 Sector 추천
+            </button>
         </div>
     </div>
 
-    <script>
-        let selectedSectors = {
-            leader: null,
-            support: null,
-            buffer: null
+    <!-- STEP 1-A: 직접 선택 -->
+    <div class="card" id="manual-sector-card" style="display:none;">
+        <h2>Sector 직접 선택 <span class="step">Step 1-A</span></h2>
+        <p class="muted" style="margin-bottom:14px;">
+            아래 섹터 목록에서 <strong>3개</strong>를 선택하세요.
+        </p>
+
+        <div id="all-sector-pills" class="pill-row"></div>
+
+        <div class="counter">
+            <div>
+                선택됨: <strong><span id="manual-selected-count">0</span>/3</strong>
+                <span class="muted" style="margin-left:8px;" id="manual-selected-names"></span>
+            </div>
+            <button class="btn-primary" id="manual-portfolio-btn" onclick="recommendPortfolio()" disabled style="max-width:260px;">
+                 포트폴리오 추천
+            </button>
+        </div>
+    </div>
+
+    <!-- STEP 1-B: AI 추천 -->
+    <div class="card" id="ai-sector-card" style="display:none;">
+        <h2> AI 기반 Sector 추천 <span class="step">Step 1-B</span></h2>
+
+        <div class="cta-row" style="margin-top:0;">
+            <button class="btn-primary" onclick="recommendSectorsByAi()" style="flex:2;">
+                 AI로 섹터 추천받기
+            </button>
+            <button class="btn-ghost" onclick="resetSectors()" style="flex:1;">
+                 선택 초기화
+            </button>
+        </div>
+
+        <div class="divider"></div>
+
+        <p class="muted" style="margin-bottom:10px;">
+            추천 결과(또는 직접 수정): 아래에서 <strong>3개</strong>가 선택되면 포트폴리오 추천이 활성화됩니다.
+        </p>
+        <div id="ai-sector-pills" class="pill-row"></div>
+
+        <div class="counter">
+            <div>
+                선택됨: <strong><span id="ai-selected-count">0</span>/3</strong>
+                <span class="muted" style="margin-left:8px;" id="ai-selected-names"></span>
+            </div>
+            <button class="btn-primary" id="ai-portfolio-btn" onclick="recommendPortfolio()" disabled style="max-width:260px;">
+                 포트폴리오 추천
+            </button>
+        </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="card" id="result" style="display:none;">
+        <div class="result">
+            <div class="result-header">
+                <h2 style="border:none; padding:0; margin:0;">📈 결과</h2>
+                <span id="result-badge" class="badge"></span>
+            </div>
+            <div id="result-content" class="result-content"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ====== State ======
+    const state = {
+        selectedSectorIds: [],        // 항상 0~3개 유지
+        selectedSectorNames: [],      // UI 표시용
+        allSectors: [],              // /api/v1/sectors 결과 캐시 (직접선택)
+        aiRecommended: []            // /api/v1/recommend/sectors 결과 캐시
+    };
+
+    // ====== Utils ======
+    function getUserProfile() {
+        return {
+            horizon: document.getElementById('horizon').value,
+            risk: document.getElementById('risk').value,
+            goal: document.getElementById('goal').value
         };
+    }
 
-        let sectorRecommendations = [];
+    function showResult(content, isSuccess=true) {
+        const resultDiv = document.getElementById('result');
+        const badge = document.getElementById('result-badge');
+        const contentDiv = document.getElementById('result-content');
 
-        function getUserProfile() {
-            const keywords = document.getElementById('keywords').value
-                .split(',')
-                .map(k => k.trim())
-                .filter(k => k.length > 0);
+        resultDiv.style.display = 'block';
+        contentDiv.innerHTML = content;
 
-            return {
-                horizon: document.getElementById('horizon').value,
-                risk: document.getElementById('risk').value,
-                goal: document.getElementById('goal').value,
-                themeKeywords: keywords
-            };
+        badge.className = `badge ${isSuccess ? 'badge-success' : 'badge-error'}`;
+        badge.textContent = isSuccess ? '✓ 성공' : '✗ 실패';
+
+        resultDiv.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+
+    function showLoading(message="처리 중입니다") {
+        showResult(`<div class="loading">${message}</div>`, true);
+    }
+
+    function setModeCards({manual=false, ai=false}) {
+        document.getElementById('manual-sector-card').style.display = manual ? 'block' : 'none';
+        document.getElementById('ai-sector-card').style.display = ai ? 'block' : 'none';
+    }
+
+    function resetSectors() {
+        state.selectedSectorIds = [];
+        state.selectedSectorNames = [];
+        syncSelectionUI();
+    }
+
+    function syncSelectionUI() {
+        // 카운트/이름 표시
+        document.getElementById('manual-selected-count').textContent = state.selectedSectorIds.length;
+        document.getElementById('ai-selected-count').textContent = state.selectedSectorIds.length;
+        document.getElementById('manual-selected-names').textContent = state.selectedSectorNames.join(', ');
+        document.getElementById('ai-selected-names').textContent = state.selectedSectorNames.join(', ');
+
+        // 버튼 활성화
+        const ok = state.selectedSectorIds.length === 3;
+        document.getElementById('manual-portfolio-btn').disabled = !ok;
+        document.getElementById('ai-portfolio-btn').disabled = !ok;
+
+        // pill selected 클래스 동기화 (manual + ai)
+        document.querySelectorAll('[data-sector-id]').forEach(el => {
+            const id = el.getAttribute('data-sector-id');
+            if (state.selectedSectorIds.includes(id)) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+    }
+
+    function toggleSector(id, name) {
+        const idx = state.selectedSectorIds.indexOf(id);
+        if (idx >= 0) {
+            // unselect
+            state.selectedSectorIds.splice(idx, 1);
+            state.selectedSectorNames.splice(idx, 1);
+        } else {
+            // select (max 3)
+            if (state.selectedSectorIds.length >= 3) return;
+            state.selectedSectorIds.push(id);
+            state.selectedSectorNames.push(name);
         }
+        syncSelectionUI();
+    }
 
-        function showResult(content, isSuccess = true) {
-            const resultDiv = document.getElementById('result');
-            const resultContent = document.getElementById('result-content');
-            const resultBadge = document.getElementById('result-badge');
+    function renderPills(targetId, sectors, {idKey='id', nameKey='name'}={}) {
+        const root = document.getElementById(targetId);
+        root.innerHTML = sectors.map(s => {
+            const id = String(s[idKey]);
+            const name = String(s[nameKey]);
+            return `
+        <div class="pill" data-sector-id="${id}" onclick="toggleSector('${id}', '${escapeHtml(name)}')">
+          ${escapeHtml(name)}
+          <span class="sub">#${id}</span>
+        </div>
+      `;
+        }).join('');
+        syncSelectionUI();
+    }
 
-            resultDiv.style.display = 'block';
-            resultContent.innerHTML = content;
+    function escapeHtml(str) {
+        return String(str)
+            .replaceAll('&','&amp;')
+            .replaceAll('<','&lt;')
+            .replaceAll('>','&gt;')
+            .replaceAll('"','&quot;')
+            .replaceAll("'","&#039;");
+    }
 
-            resultBadge.className = `badge ${isSuccess ? 'badge-success' : 'badge-error'}`;
-            resultBadge.textContent = isSuccess ? '✓ 성공' : '✗ 실패';
+    // ====== Flow: Manual ======
+    async function startManualSectorFlow() {
+        setModeCards({manual:true, ai:false});
+        resetSectors();
+        showLoading("섹터 목록을 불러오는 중");
 
-            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        try {
+            const res = await fetch('/api/v1/sectors', { method:'GET' });
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+            const data = await res.json();
+            // 기대 형태 예시:
+            // 1) [{id:1, name:"반도체"}, ...]
+            // 2) {sectors:[{sectorId:1, sectorName:"반도체"}]}
+            let sectors = data;
+
+            if (data && Array.isArray(data.sectors)) sectors = data.sectors;
+            // key normalize
+            const normalized = sectors.map(s => ({
+                id: s.id ?? s.sectorId ?? s.code ?? s.sector_id,
+                name: s.name ?? s.sectorName ?? s.title
+            })).filter(s => s.id != null && s.name != null);
+
+            state.allSectors = normalized;
+            renderPills('all-sector-pills', normalized, {idKey:'id', nameKey:'name'});
+
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('manual-sector-card').scrollIntoView({behavior:'smooth', block:'nearest'});
+        } catch (e) {
+            showResult(`
+        <div class="error-message">
+          <strong>오류 발생:</strong> ${escapeHtml(e.message)}<br/>
+          <small>서버에서 <code>/api/v1/sectors</code>가 정상 응답하는지 확인해주세요.</small>
+        </div>
+      `, false);
         }
+    }
 
-        function showLoading() {
-            showResult('<div class="loading">AI가 분석 중입니다</div>', true);
-        }
+    // ====== Flow: AI ======
+    function startAiSectorFlow() {
+        setModeCards({manual:false, ai:true});
+        resetSectors();
+        document.getElementById('ai-sector-pills').innerHTML = '';
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('ai-sector-card').scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
 
-        async function recommendSectors() {
-            showLoading();
+    async function recommendSectorsByAi() {
+        showLoading("AI가 섹터를 추천하는 중");
 
-            try {
-                const profile = getUserProfile();
+        try {
+            const profile = getUserProfile();
+            const res = await fetch('/api/v1/recommend/sectors', {
+                method:'POST',
+                headers:{ 'Content-Type':'application/json' },
+                body: JSON.stringify(profile)
+            });
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
-                const response = await fetch('/api/v1/recommend/sectors', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(profile)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                displaySectorSelection(data);
-            } catch (error) {
-                showResult(`
-                    <div class="error-message">
-                        <strong>오류 발생:</strong> ${error.message}<br>
-                        <small>서버가 실행 중인지, Google API 키가 설정되었는지 확인해주세요.</small>
-                    </div>
-                `, false);
-            }
-        }
-
-        function displaySectorSelection(data) {
-            const sectorSelectionDiv = document.getElementById('sector-selection');
-            const sectorCardsDiv = document.getElementById('sector-cards');
-
-            if (!data.cards || data.cards.length === 0) {
+            const data = await res.json();
+            // 기존 코드 기준: data.cards = [{role, sectorId, sectorName, title, oneLineReason, ...}]
+            const cards = (data && Array.isArray(data.cards)) ? data.cards : [];
+            if (cards.length === 0) {
                 showResult('<p>추천된 섹터가 없습니다.</p>', false);
                 return;
             }
 
-            sectorRecommendations = data.cards;
+            // AI 카드에서 sectorId/sectorName 추출
+            const aiSectors = cards.map(c => ({
+                id: String(c.sectorId),
+                name: String(c.sectorName ?? c.title ?? `Sector ${c.sectorId}`),
+                reason: c.oneLineReason ?? ''
+            }));
 
-            let html = '';
-            data.cards.forEach((card, index) => {
-                const roleLabel = card.role === 'LEADER' ? '리더' :
-                                 card.role === 'SUPPORT' ? '서포트' : '완충';
+            state.aiRecommended = aiSectors;
 
-                html += `
-                    <div class="sector-item" onclick="selectSectorCard('${card.role.toLowerCase()}', '${card.sectorId}', '${card.sectorName}','${card.title}')">
-                        <h4>
-                            ${roleLabel} 섹터: ${card.title}
-                            <span class="score">분야: ${card.sectorName}</span>
-                        </h4>
-                        <p><strong>추천 이유:</strong> ${card.oneLineReason}</p>
-                    </div>
-                `;
+            // 추천을 "자동 선택" (최대 3개)
+            resetSectors();
+            aiSectors.slice(0,3).forEach(s => {
+                state.selectedSectorIds.push(String(s.id));
+                state.selectedSectorNames.push(String(s.name));
             });
 
-            sectorCardsDiv.innerHTML = html;
-            sectorSelectionDiv.style.display = 'block';
+            // UI: pill + 추천 이유는 결과창에 간단히 보여주기
+            renderPills('ai-sector-pills', aiSectors, {idKey:'id', nameKey:'name'});
 
-            // 자동으로 추천된 섹터 선택
-            if (data.selected) {
-                document.getElementById('leaderSectorId').value = data.selected.leader || '';
-                document.getElementById('supportSectorId').value = data.selected.support || '';
-                document.getElementById('bufferSectorId').value = data.selected.buffer || '';
-            }
+            const reasonHtml = `
+        <div style="margin-bottom:10px;">
+          <strong style="color:#1e40af;">AI 추천 근거 요약</strong>
+          <ul style="margin-top:10px; padding-left:18px; color:#334155; line-height:1.7;">
+            ${aiSectors.slice(0,3).map(s => `<li><strong>${escapeHtml(s.name)}</strong> - ${escapeHtml(s.reason || '추천 근거 제공') }</li>`).join('')}
+          </ul>
+          <div class="muted" style="margin-top:10px;">
+            필요하면 위 섹터 목록에서 3개를 직접 수정 선택할 수 있습니다.
+          </div>
+        </div>
+      `;
+            showResult(reasonHtml, true);
 
-            sectorSelectionDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            document.getElementById('ai-sector-card').scrollIntoView({behavior:'smooth', block:'nearest'});
+            syncSelectionUI();
+        } catch (e) {
+            showResult(`
+        <div class="error-message">
+          <strong>오류 발생:</strong> ${escapeHtml(e.message)}<br/>
+          <small>서버에서 <code>/api/v1/recommend/sectors</code>가 정상 동작하는지 확인해주세요.</small>
+        </div>
+      `, false);
+        }
+    }
 
-            // 결과 숨기기
-            document.getElementById('result').style.display = 'none';
+    // ====== Portfolio ======
+    async function recommendPortfolio() {
+        if (state.selectedSectorIds.length !== 3) {
+            alert('섹터 3개를 선택해주세요!');
+            return;
         }
 
-        function selectSectorCard(role, sectorId, title) {
-            selectedSectors[role] = sectorId;
+        showLoading("포트폴리오를 구성하는 중");
 
-            // 입력 필드 업데이트
-            document.getElementById(role + 'SectorId').value = sectorId;
+        try {
+            const profile = getUserProfile();
+
+            // 서버 호환을 위해 두 가지 형태를 같이 보냄:
+            // 1) sectorIds: [a,b,c]
+            // 2) leader/support/bufferSectorId: 기존 필드 (순서는 선택 순서 기준)
+            const [a,b,c] = state.selectedSectorIds;
+            const requestBody = {
+                ...profile,
+                sectorIds: [a,b,c],
+                leaderSectorId: a,
+                supportSectorId: b,
+                bufferSectorId: c
+            };
+
+            const res = await fetch('/api/v1/portfolio', {
+                method:'POST',
+                headers:{ 'Content-Type':'application/json' },
+                body: JSON.stringify(requestBody)
+            });
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+            const data = await res.json();
+            displayPortfolioResults(data);
+        } catch (e) {
+            showResult(`
+        <div class="error-message">
+          <strong>오류 발생:</strong> ${escapeHtml(e.message)}<br/>
+          <small>서버가 실행 중인지 확인해주세요.</small>
+        </div>
+      `, false);
+        }
+    }
+
+    function displayPortfolioResults(data) {
+        let html = `
+      <h3 style="color:#1e40af; margin-bottom:12px;">💼 추천 포트폴리오 (Top 10)</h3>
+      <div class="muted" style="margin-bottom:10px;">
+        선택 섹터: <strong style="color:#0f172a;">${escapeHtml(state.selectedSectorNames.join(', '))}</strong>
+      </div>
+    `;
+
+        if (data.stocks && data.stocks.length > 0) {
+            html += `
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th>종목명</th>
+              <th>종목코드</th>
+              <th>분야</th>
+              <th>시장</th>
+              <th>비중</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+            data.stocks.forEach(stock => {
+                const marketClass = stock.market === 'KOSPI' ? 'market-kospi' : 'market-kosdaq';
+                html += `
+          <tr>
+            <td><strong>${escapeHtml(stock.name)}</strong></td>
+            <td>${escapeHtml(stock.code)}</td>
+            <td>${escapeHtml(stock.sectorName ?? '')}</td>
+            <td><span class="market-badge ${marketClass}">${escapeHtml(stock.market)}</span></td>
+            <td><span class="weight-badge">${Number(stock.weight).toFixed(1)}%</span></td>
+          </tr>
+        `;
+            });
+
+            html += `</tbody></table>`;
+        } else {
+            html += '<p>선정된 종목이 없습니다.</p>';
         }
 
-        async function recommendPortfolio() {
-            const leaderSectorId = document.getElementById('leaderSectorId').value;
-            const supportSectorId = document.getElementById('supportSectorId').value;
-            const bufferSectorId = document.getElementById('bufferSectorId').value;
-
-            if (!leaderSectorId || !supportSectorId || !bufferSectorId) {
-                alert('섹터 ID 3개를 모두 입력해주세요!');
-                return;
-            }
-
-            showLoading();
-
-            try {
-                const profile = getUserProfile();
-
-                const requestBody = {
-                    ...profile,
-                    leaderSectorId: leaderSectorId,
-                    supportSectorId: supportSectorId,
-                    bufferSectorId: bufferSectorId
-                };
-
-                const response = await fetch('/api/v1/portfolio', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                displayPortfolioResults(data);
-            } catch (error) {
-                showResult(`
-                    <div class="error-message">
-                        <strong>오류 발생:</strong> ${error.message}<br>
-                        <small>서버가 실행 중인지, Google API 키가 설정되었는지 확인해주세요.</small>
-                    </div>
-                `, false);
-            }
+        if (data.rebalancingRules && data.rebalancingRules.length > 0) {
+            html += `
+        <div style="margin-top:18px; padding:16px; background:#fff; border-radius:12px; border-left:4px solid rgba(245,158,11,.9); border:1px solid var(--line);">
+          <h4 style="color:#0f172a; margin-bottom:10px;">⚖️ 리밸런싱 룰</h4>
+          <ul style="padding-left:18px; color:#334155; line-height:1.7;">
+            ${data.rebalancingRules.map(rule => `<li>${escapeHtml(rule)}</li>`).join('')}
+          </ul>
+        </div>
+      `;
         }
 
-        function displayPortfolioResults(data) {
-            let html = '<h3 style="color: #667eea; margin-bottom: 20px;">💼 추천 포트폴리오 (Top 10 종목)</h3>';
-
-            // 종목 리스트 (새 형식)
-            if (data.stocks && data.stocks.length > 0) {
-                html += `
-                    <table class="stock-table">
-                        <thead>
-                            <tr>
-                                <th>종목명</th>
-                                <th>종목코드</th>
-                                <th>분야</th>
-                                <th>시장</th>
-                                <th>비중</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                data.stocks.forEach(stock => {
-                    const marketClass = stock.market === 'KOSPI' ? 'market-kospi' : 'market-kosdaq';
-
-                    html += `
-                        <tr>
-                            <td><strong>${stock.name}</strong></td>
-                            <td>${stock.code}</td>
-                            <td>${stock.sectorName}</td>
-                            <td><span class="market-badge ${marketClass}">${stock.market}</span></td>
-                            <td><span class="weight-badge">${stock.weight.toFixed(1)}%</span></td>
-                        </tr>
-                    `;
-                });
-
-                html += `
-                        </tbody>
-                    </table>
-                `;
-            } else {
-                html += '<p>선정된 종목이 없습니다.</p>';
-            }
-
-            // 리밸런싱 룰
-            if (data.rebalancingRules && data.rebalancingRules.length > 0) {
-                html += `
-                    <div style="margin-top: 30px; padding: 20px; background: white; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                        <h4 style="color: #333; margin-bottom: 15px;">⚖️ 리밸런싱 룰</h4>
-                        <ul style="padding-left: 20px; color: #666;">
-                            ${data.rebalancingRules.map(rule => `<li style="margin: 8px 0;">${rule}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
-            }
-
-            // 주의사항
-            if (data.caution) {
-                html += `
-                    <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
-                        <h4 style="color: #856404; margin-bottom: 10px;">⚠️ 주의사항</h4>
-                        <p style="color: #856404; line-height: 1.6;">${data.caution}</p>
-                    </div>
-                `;
-            }
-
-            showResult(html, true);
+        if (data.caution) {
+            html += `
+        <div style="margin-top:14px; padding:14px; background:#fffbeb; border-radius:12px; border-left:4px solid rgba(245,158,11,.9); border:1px solid rgba(245,158,11,.25);">
+          <h4 style="color:#92400e; margin-bottom:8px;">⚠️ 주의사항</h4>
+          <p style="color:#92400e; line-height:1.7;">${escapeHtml(data.caution)}</p>
+        </div>
+      `;
         }
-    </script>
+
+        showResult(html, true);
+    }
+
+    // 초기 동기화
+    syncSelectionUI();
+</script>
 </body>
 </html>

@@ -14,7 +14,6 @@ public class UserProfileRequest {
     private Horizon horizon;
     private Risk risk;
     private Goal goal;
-    private List<String> themeKeywords;
 
     public enum Horizon { W1_4, M1_6, M6P }
     public enum Risk { LOW, MEDIUM, HIGH }
